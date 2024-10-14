@@ -1,9 +1,10 @@
 <script lang="ts" setup>
-import { useI18n } from 'vue-i18n'
 import { ref, computed } from 'vue'
 
+import useI18n from '@/lang'
 import { getValue } from '@/utils'
 import type { Menu } from '@/stores'
+import vMenu from '@/directives/menu'
 
 export type Column = {
   title: string
@@ -32,7 +33,7 @@ const sortFunc = computed(
   () => props.columns.find((column) => column.key === sortField.value)?.sort
 )
 
-const { t } = useI18n()
+const { t } = useI18n.global
 
 const handleChangeSortField = (field: string) => {
   if (sortField.value === field) {
@@ -95,13 +96,12 @@ const tableColumns = computed(() => {
             :key="column.key"
             :style="{ textAlign: column.align || 'left' }"
             class="select-text"
-          >
-            {{
+            v-html="
               (column.customRender
                 ? column.customRender({ value: getValue(data, column.key), record: data })
                 : getValue(data, column.key)) ?? '-'
-            }}
-          </td>
+            "
+          ></td>
         </tr>
       </tbody>
     </table>
