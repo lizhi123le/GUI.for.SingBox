@@ -45,205 +45,227 @@ export default {
     openFile: '打开文件',
     develop: '开发',
     canceled: '已取消',
-    downloading: '下载中...'
+    downloading: '下载中...',
   },
   kernel: {
-    port: 'HTTP(s)代理端口',
-    mode: '工作模式',
-    ipv6: '开启IPv6',
-    secret: 'RESTful API密钥',
-    'socks-port': 'SOCKS5代理端口',
-    'mixed-port': '混合代理端口',
-    'allow-lan': '允许局域网访问',
-    'log-level': '日志级别',
-    'external-controller': 'RESTful Web API监听地址',
-    'external-ui': 'Web UI路径',
-    'interface-name': '出站接口名称',
-    auto: '自动获取',
-    info: '信息',
-    warning: '警告',
-    error: '错误',
-    debug: '调试',
-    silent: '静默',
     rule: '规则',
     global: '全局',
     direct: '直连',
-    ruleDesp: '按照规则文件分流',
-    globalDesp: '仅走Global策略组',
-    directDesp: '直接连接所有流量',
-    'keep-alive-interval': 'TCP Keep Alive 间隔',
-    'find-process-mode': '进程匹配模式',
-    'external-controller-tls': 'RESTful Web API监听地址(HTTPS)',
-    'external-ui-name': '外部用户界面',
-    'external-ui-url': '自定义外部用户界面下载地址',
-    'unified-delay': '统一延迟',
-    'tcp-fast-open': 'TCP快速打开',
-    domain_strategy: '域名策略',
-    'tcp-multi-path': '多路径TCP',
-    'udp-fragment': 'UDP分段',
-    sniff: '协议探测',
-    'sniff-override-destination': '探测域名覆盖目标地址',
-    authentication: 'Http/Socks 验证用户',
-    'skip-auth-prefixes': '跳过验证的IP段',
-    'store-cache': '持久化缓存',
-    'store-fake-ip': '持久化Fake-IP',
-    'store-rdrc': '持久化被拒绝的DNS响应',
-    'geo-auto-update': 'GEO 自动更新',
-    'geo-update-interval': 'GEO 自动更新间隔',
-    'lan-allowed-ips': '允许连接的地址段',
-    'lan-disallowed-ips': '禁止连接的IP地址段',
-    tun: {
-      enable: '启用TUN',
-      stack: 'TUN模式堆栈',
-      'interface-name': 'TUN网卡名称',
-      'auto-route': '自动设置全局路由',
-      'auto-detect-interface': '自动选择流量出口接口',
-      'dns-hijack': 'dns 劫持',
-      'strict-route': '严格路由',
-      mtu: '最大传输单元',
-      'endpoint-independent-nat': '独立于端点的 NAT',
-      address: 'IPv4和IPv6前缀',
-      system: 'System',
-      gvisor: 'gVisor',
-      mixed: 'Mixed',
-      lwip: 'LWIP'
+    ruleDesc: '按照规则文件分流',
+    globalDesc: '仅走Global策略组',
+    directDesc: '直接连接所有流量',
+    log: {
+      disabled: '禁用日志',
+      level: '日志级别',
+      output: '日志保存路径',
+      timestamp: '日志时间戳',
+      trace: '跟踪',
+      debug: '调试',
+      info: '信息',
+      warn: '警告',
+      error: '错误',
+      fatal: '致命',
+      panic: '恐慌',
     },
-    dns: {
-      enable: '启用DNS',
-      'fake-ip-range-v4': 'Fake-IP范围(IPV4)',
-      'fake-ip-range-v6': 'Fake-IP范围(IPV6)',
-      'fake-ip-filter': 'Fake-IP排除',
-      'fake-ip': 'Fake-IP',
-      'local-dns': '本地DNS',
-      'remote-dns': '远程DNS',
-      'resolver-dns': '本地解析DNS',
-      'remote-resolver-dns': '远程解析DNS',
-      'local-dns-detour': '本地DNS出站',
-      'remote-dns-detour': '远程DNS出站',
-      'final-dns': '回退DNS',
-      'fakeip-dns': 'Fake-IP DNS',
-      'disable-cache': '禁用DNS缓存',
-      'disable-expire': '禁用DNS缓存过期',
-      'independent-cache': '独立缓存',
-      'client-subnet': '客户端子网',
-      block: '禁止解析',
-      default: '默认',
-      strategy: {
-        name: '策略',
-        default: '默认',
-        prefer_ipv4: 'IPV4优先',
-        prefer_ipv6: 'IPV6优先',
-        ipv4_only: '只使用IPV4',
-        ipv6_only: '只使用IPV6'
-      }
+    clash_api: {
+      external_controller: 'RESTful Web API监听地址',
+      external_ui: 'Web UI路径',
+      external_ui_download_url: 'Web UI下载地址',
+      external_ui_download_detour: 'Web UI下载地址的出站标签',
+      secret: 'RESTful API密钥',
+      default_mode: '工作模式',
+      access_control_allow_origin: '允许的CORS来源',
+      access_control_allow_private_network: '允许从私有网络访问',
     },
-    tls: {
-      certificate: '证书(PEM格式/路径)',
-      'private-key': '私钥(PEM格式/路径)'
+    cache_file: {
+      enabled: '启用缓存',
+      path: '缓存文件路径',
+      cache_id: '缓存文件中的标识符',
+      store_fakeip: '持久化FakeIP',
+      store_rdrc: '持久化已拒绝的DNS响应',
+      rdrc_timeout: '拒绝的DNS响应缓存超时',
     },
-    'global-client-fingerprint': '全局客户端指纹',
-    tracing: '性能分析引擎',
-    'sniff-tls-sni': '嗅探TLS SNI',
-    'redirect-to-tun': 'eBPF 重定向到 TUN',
-    proxyGroups: {
-      name: '名称',
-      lazy: '懒惰模式',
-      'disable-udp': '禁用UDP',
-      interval: '间隔',
-      tolerance: '容差',
-      url: '测速链接',
-      filter: '过滤',
-      notFound: '部分订阅或节点已丢失，请清理',
-      needToAdd: '至少引用一个订阅或节点',
+    inbounds: {
+      enable: '启用',
+      tag: '名称',
+      users: 'Http/Socks验证用户',
+      listen: {
+        listen: '监听地址',
+        listen_port: '端口',
+        tcp_fast_open: 'TCP快速打开',
+        tcp_multi_path: '多路径TCP',
+        udp_fragment: 'UDP分段',
+      },
+      tun: {
+        interface_name: 'TUN网卡名称',
+        address: 'IPv4和IPv6前缀',
+        mtu: '最大传输单元',
+        auto_route: '自动设置全局路由',
+        strict_route: '严格路由',
+        route_address: '自定义路由',
+        endpoint_independent_nat: '独立于端点的 NAT',
+        stack: 'TUN模式堆栈',
+        system: 'System',
+        gvisor: 'gVisor',
+        mixed: 'Mixed',
+      },
+      mixedPort: '混合代理端口',
+      httpPort: 'HTTP(s)代理端口',
+      socksPort: 'SOCKS5代理端口',
+    },
+    outbounds: {
+      name: '出站',
+      tag: '名称',
+      type: '类型',
+      url: '测延迟链接',
+      interval: '测试间隔(m)',
+      tolerance: '测试容差(ms)',
+      interrupt_exist_connections: '中断现有连接',
+      direct: '直连',
+      directDesc: '直连出站流量，无设置项目',
+      selector: '手动选择',
+      urltest: '自动选择',
+      notFound: '部分出站或代理已丢失，请清理',
+      needToAdd: '至少引用一个出站或订阅',
+      refsSubscription: '引用订阅',
+      refsOutbound: '引用出站',
       sort: '查看和排序',
-      builtIn: '内建',
-      subscriptions: '订阅列表',
-      type: {
-        name: '类型',
-        select: '手动选择',
-        'url-test': '自动选择',
-        fallback: '自动回退',
-        relay: '链式代理',
-        'load-balance': '负载均衡',
-        Selector: '手动选择',
-        UrlTest: '自动选择',
-        Fallback: '自动回退'
+      refs: '引用订阅&引用节点',
+      noSubs: '订阅列表为空',
+      empty: '该订阅下无可用代理',
+      builtIn: '内置',
+      subscriptions: '订阅',
+      include: '包含',
+      exclude: '排除',
+    },
+    route: {
+      tab: {
+        common: '通用',
+        rules: '规则',
+        rule_set: '规则集',
       },
-      strategy: {
-        name: '负载均衡策略',
-        'consistent-hashing': 'consistent-hashing',
-        'round-robin': 'round-robin'
+      auto_detect_interface: '自动检测出站接口',
+      default_interface: '出站接口名称',
+      final: '默认出站标签',
+      rule_set: {
+        type: {
+          name: '类型',
+          inline: '内联',
+          local: '本地',
+          remote: '远程',
+        },
+        tag: '名称',
+        format: {
+          name: '格式',
+          binary: '二进制',
+          source: '源文件',
+        },
+        url: '远程链接',
+        download_detour: '下载方式',
+        update_interval: '自动更新间隔',
+        path: '保存路径',
+        notFound: '规则集已丢失',
+        empty: '规则集列表为空',
       },
-      empty: '该订阅分组内没有可用节点',
-      noSubs: '订阅列表为空'
+      rules: {
+        type: '规则类型',
+        action: {
+          name: '规则动作',
+          route: '路由',
+          'route-options': '路由设置选项',
+          reject: '拒绝连接',
+          'hijack-dns': '劫持DNS请求',
+          sniff: '协议嗅探',
+          resolve: '解析DNS',
+          rejectMethod: '拒绝方式',
+          rejectDefault: '返回NXDOMAIN',
+          rejectDrop: '丢弃请求',
+        },
+        outbound: '出站标签',
+        routeOptions: '路由选项',
+        sniffer: {
+          name: '启用的探测器',
+          http: 'http',
+          tls: 'tls',
+          quic: 'quic',
+          dns: 'dns',
+          ssh: 'ssh',
+          rdp: 'rdp',
+        },
+        server: 'DNS服务器',
+        payload: '载荷',
+        invalid: '无效参数',
+        invert: '反向匹配',
+      },
     },
     rules: {
-      payload: '载荷',
-      proxy: '代理',
-      invert: '取反',
-      ruleset: '规则集',
-      rulesets: '规则集列表',
-      'download-detour': '下载方式',
-      'disable-cache': '关闭缓存',
-      name: '名称',
-      needGeodataMode: '请在高级设置中打开"GEO数据模式"',
-      notFound: '策略组不存在',
-      inlineRuleError: '内联规则语法错误',
-      empty: '规则集列表为空',
       type: {
         name: '类型',
-        DOMAIN: '域名 (DOMAIN)',
-        GEOIP: '国家IP代码规则 (GEOIP)',
-        GEOSITE: '域名集合 (GEOSITE)',
-        IPSET: 'IP集 (IPSET)',
-        SCRIPT: '脚本 (SCRIPT)',
-        FALLBACK: 'Fallback',
-        'DOMAIN-SUFFIX': '域名后缀 (DOMAIN-SUFFIX)',
-        'DOMAIN-KEYWORD': '域名关键词 (DOMAIN-KEYWORD)',
-        'DOMAIN-REGEX': '域名正则表达式 (DOMAIN-REGEX)',
-        'IP-CIDR': 'IPv4地址段 (IP-CIDR)',
-        'IP-CIDR6': 'IPv6地址段 (IP-CIDR6)',
-        'SRC-PORT': '源端口 (SRC-PORT)',
-        'DST-PORT': '目标端口 (DST-PORT)',
-        'PROCESS-NAME': '源进程名 (PROCESS-NAME)',
-        'PROCESS-PATH': '源进程路径 (PROCESS-PATH)',
-        'RULE-SET': '规则集 (RULE-SET)',
-        'REMOTE-RULE-SET': '远程规则集 (REMOTE-RULE-SET)',
-        PROTOCOL: '协议 (PROTOCOL)',
-        'IP-PRIVATE': '私有IP (IP-PRIVATE)',
-        'SRC-IP-PRIVATE': '源私有IP (SRC-IP-PRIVATE)',
-        'SRC-IP-CIDR': '源IP段地址 (SRC-IP-CIDR)',
-        'CLASH-MODE': 'Clash模式 (CLASH-MODE)',
-        NETWORK: '网络协议 (NETWORK)',
-        'IP-VERSION': 'IP协议 (IP-VERSION)',
-        'QUERY-TYPE': '查询类型 (QUERY-TYPE)',
-        INBOUND: '入站 (INBOUND)',
-        OUTBOUND: '出站 (OUTBOUND)',
-        'FAKE-IP': 'Fake-IP',
-        INLINE: '内联规则',
-        'RULE-SET-IPCIDR-MATCH-SOURCE': '规则集中的ipcidr匹配源IP (RULE-SET-IPCIDR-MATCH-SOURCE)'
-      }
+        inbound: '入站(inbound)',
+        network: '网络(network)',
+        protocol: '协议(protocol)',
+        domain: '域名(domain)',
+        domain_suffix: '域名后缀(domain_suffix)',
+        domain_keyword: '域名关键词(domain_keyword)',
+        domain_regex: '域名正则(domain_regex)',
+        source_ip_cidr: '源IP地址段(source_ip_cidr)',
+        ip_cidr: 'IP地址段(ip_cidr)',
+        ip_is_private: '是否为私有IP(ip_is_private)',
+        source_port: '源端口(source_port)',
+        source_port_range: '源端口范围(source_port_range)',
+        port: '端口(port)',
+        port_range: '端口范围(port_range)',
+        process_name: '进程名称(process_name)',
+        process_path: '进程路径(process_path)',
+        process_path_regex: '进程路径正则(process_path_regex)',
+        clash_mode: 'Clash模式(clash_mode)',
+        rule_set: '规则集(rule_set)',
+        outbound: '出站(outbound)',
+        inline: '内联(Inline)',
+      },
     },
-    standard: '标准',
-    memconservative: '适用小内存设备',
-    chrome: 'Chrome',
-    firefox: 'Firefox',
-    safari: 'Safari',
-    iOS: 'IOS',
-    android: 'Android',
-    edge: 'Edge',
-    '360': '360',
-    qq: 'QQ',
-    random: '随机',
-    always: '开启',
-    strict: '自动',
-    off: '关闭',
-    notFound: '无内核',
-    requestFailed: '获取失败',
-    local: '本地',
-    remote: '远程',
-    update: '更新',
-    restart: '重启内核'
+    strategy: {
+      name: '策略',
+      default: '默认',
+      byDnsRules: '由DNS路由规则决定',
+      prefer_ipv4: 'IPV4优先',
+      prefer_ipv6: 'IPV6优先',
+      ipv4_only: '只使用IPV4',
+      ipv6_only: '只使用IPV6',
+    },
+    dns: {
+      tab: {
+        common: '通用',
+        servers: '服务器',
+        rules: '规则',
+      },
+      tag: '名称',
+      address: '地址',
+      client_subnet: '客户端子网',
+      address_resolver: '解析本DNS服务器域名的DNS',
+      detour: '出站标签',
+      disable_cache: '禁用DNS缓存',
+      disable_expire: '禁用DNS缓存过期',
+      independent_cache: '独立缓存',
+      final: '回退DNS',
+      strategy: '解析策略',
+      fakeip: {
+        name: 'Fake-IP',
+        inet4_range: 'Fake-IP范围(IPv4)',
+        inet6_range: 'Fake-IP范围(IPv6)',
+        addServer: '添加FakeIP DNS服务器',
+        addRules: '添加FakeIP DNS规则',
+      },
+      rules: {
+        type: '类型',
+        payload: '载荷',
+        action: '规则动作',
+        server: '目标DNS服务器的标签',
+      },
+    },
+    mode: '工作模式',
+    'allow-lan': '允许局域网访问',
+    'disallow-lan': '禁止局域网访问',
   },
   router: {
     overview: '概览',
@@ -256,7 +278,7 @@ export default {
     about: '关于',
     profiles: '配置',
     kernel: '内核',
-    scheduledtasks: '计划任务'
+    scheduledtasks: '计划任务',
   },
   home: {
     mode: '代理模式',
@@ -289,7 +311,7 @@ export default {
       settings: '内核设置',
       settingsTips: '暂时生效，持久化请修改配置文件',
       updateGEO: '更新 GEO',
-      needPort: '请先设置代理端口'
+      needPort: '请先设置代理端口',
     },
     controller: {
       name: '控制器',
@@ -298,7 +320,7 @@ export default {
       cardMode: '卡片模式',
       sortBy: '按延迟排序',
       delay: '延迟测试URL',
-      delayUrl: '请输入延迟测试URL'
+      delayUrl: '请输入延迟测试URL',
     },
     connections: {
       type: '类型',
@@ -324,8 +346,8 @@ export default {
       closed: '已关闭',
       closeAll: '关闭所有连接',
       sort: '排序和设置显示字段',
-      details: '连接详情'
-    }
+      details: '连接详情',
+    },
   },
   subscribe: {
     manual: '手动管理',
@@ -346,8 +368,8 @@ export default {
     healthCheck: {
       name: '健康检查',
       interval: '时间间隔(秒)',
-      url: '测试链接'
-    }
+      url: '测试链接',
+    },
   },
   subscribes: {
     download: '下行流量',
@@ -365,8 +387,8 @@ export default {
     proxies: {
       type: '协议',
       name: '名称',
-      add: '添加代理'
-    }
+      add: '添加代理',
+    },
   },
   profile: {
     name: '名称',
@@ -375,12 +397,11 @@ export default {
     step: {
       name: '名称设置',
       general: '通用设置',
-      tun: 'TUN 设置',
-      dns: 'DNS 设置',
-      groups: '策略组设置',
-      dnsRules: 'DNS规则设置',
-      rules: '路由规则设置',
-      'mixin-script': '混入和脚本'
+      inbounds: '入站设置',
+      outbounds: '出站设置',
+      route: '路由设置',
+      dns: 'DNS设置',
+      'mixin-script': '混入和脚本',
     },
     proxies: '引用节点',
     use: '引用订阅',
@@ -392,11 +413,11 @@ export default {
       name: '混入配置',
       priority: '优先级',
       mixin: '混入优先',
-      gui: 'GUI优先'
+      gui: 'GUI优先',
     },
     scriptSettings: {
-      name: '脚本操作'
-    }
+      name: '脚本操作',
+    },
   },
   profiles: {
     shouldStop: '当前配置正在使用，无法删除',
@@ -405,22 +426,24 @@ export default {
     generateAndView: '生成配置并查看',
     copy: '复制并粘贴',
     start: '使用此配置启动/重启',
-    proxyGroups: '策略组',
-    rules: '规则'
+    inbounds: '入站',
+    outbounds: '出站',
+    dnsServers: 'DNS服务器',
+    dnsRules: 'DNS规则',
   },
   ruleset: {
     manual: '手动管理',
     format: {
       name: '文件格式',
       source: '源文件',
-      binary: '二进制'
+      binary: '二进制',
     },
     rulesetType: '规则集类型',
     name: '名称',
     url: '远程链接',
     path: '保存路径',
     interval: '更新间隔',
-    updating: '更新中'
+    updating: '更新中',
   },
   rulesets: {
     hub: '规则集中心',
@@ -431,7 +454,7 @@ export default {
     empty: '规则集列表为空，请先{action}或从{import}导入。',
     rulesetCount: '规则数量',
     editRuleset: '编辑规则集文件',
-    selectRuleType: '选择规则类型'
+    selectRuleType: '选择规则类型',
   },
   plugin: {
     trigger: '触发器',
@@ -462,7 +485,7 @@ export default {
     confKey: '配置标志',
     confDefault: '默认值',
     options: '选项',
-    restore: '恢复为默认值'
+    restore: '恢复为默认值',
   },
   plugins: {
     updating: '更新中',
@@ -475,7 +498,7 @@ export default {
     updateSuccess: '列表更新成功',
     total: '插件数量为',
     removeConfiguration: '是否删除插件配置？',
-    testRun: '运行测试'
+    testRun: '运行测试',
   },
   scheduledtask: {
     name: '名称',
@@ -492,7 +515,7 @@ export default {
     'update::ruleset': '更新规则集',
     'update::plugin': '更新插件',
     'run::plugin': '运行插件',
-    'run::script': '运行脚本'
+    'run::script': '运行脚本',
   },
   scheduledtasks: {
     logs: '日志',
@@ -504,7 +527,7 @@ export default {
     result: '执行结果',
     empty: '计划任务列表为空，请先{action}计划任务。',
     run: '立即运行',
-    log: '查看日志'
+    log: '查看日志',
   },
   settings: {
     general: '通用',
@@ -512,7 +535,7 @@ export default {
       name: '主题',
       light: '浅色',
       dark: '深色',
-      auto: '跟随系统'
+      auto: '跟随系统',
     },
     color: {
       name: '颜色',
@@ -528,31 +551,31 @@ export default {
     resetFont: '重置字体',
     appFolder: {
       name: '应用程序文件夹',
-      open: '打开应用程序文件夹'
+      open: '打开应用程序文件夹',
     },
     kernelCache: {
       name: '内核缓存',
-      clear: '清除持久化缓存'
+      clear: '清除持久化缓存',
     },
     lang: {
       name: '语言',
       zh: '简体中文',
-      en: 'English'
+      en: 'English',
     },
     pages: {
-      name: '页面可见性'
+      name: '页面可见性',
     },
     windowState: {
       normal: '以普通窗口启动',
       maximised: '最大化',
       minimised: '最小化窗口启动',
-      fullscreen: '全屏'
+      fullscreen: '全屏',
     },
     webviewGpuPolicy: {
       name: 'Webview GPU 策略',
       always: '启用硬件加速',
       onDemand: '根据Web内容自行决定',
-      never: '禁用硬件加速'
+      never: '禁用硬件加速',
     },
     needRestart: '重启生效',
     needAdmin: '需要管理员权限',
@@ -566,22 +589,27 @@ export default {
     rollingRelease: '启用滚动发行',
     startup: {
       name: '开机时启动',
-      delay: '延迟(秒)'
+      delay: '延迟(秒)',
     },
     kernel: {
+      name: 'sing-box',
       version: '切换版本',
       stable: '稳定版',
       alpha: '内测版',
-      grant: '授予特权'
+      grant: '授予特权',
+      local: '本地',
+      remote: '远程',
+      update: '更新',
+      restart: '重启核心',
     },
     userAgent: {
       name: '用户代理(User-Agent)',
-      reset: ' 重置用户代理'
+      reset: ' 重置用户代理',
     },
     githubapi: {
       name: '向 REST API 进行身份验证',
-      tips: '拥有更高的速率限制'
-    }
+      tips: '拥有更高的速率限制',
+    },
   },
   about: {
     new: '新版本',
@@ -591,7 +619,7 @@ export default {
     updateSuccessfulReplace: '下载完成，请手动替换软件',
     updateSuccessful: '更新完成',
     newVersion: '发现新版本',
-    latestVersion: '已经是最新版本了'
+    latestVersion: '已经是最新版本了',
   },
   titlebar: {
     resetSize: '重置窗口',
@@ -599,7 +627,7 @@ export default {
     restart: '重启程序',
     exitApp: '退出程序',
     waiting: '正在等待程序退出...',
-    timeout: '程序退出超时，是否强制退出？\n\n原因：插件退出超时。'
+    timeout: '程序退出超时，是否强制退出？\n\n原因：插件退出超时。',
   },
   format: {
     seconds: '秒',
@@ -615,14 +643,14 @@ export default {
     month: '月',
     year: '年',
     ago: '前',
-    later: '后'
+    later: '后',
   },
   outbound: {
     select: '🚀 节点选择',
     urltest: '🎈 自动选择',
     direct: '🎯 全球直连',
     block: '🛑 全球拦截',
-    fallback: '🐟 漏网之鱼'
+    fallback: '🐟 漏网之鱼',
   },
   tray: {
     showMainWindow: '显示主窗口',
@@ -641,9 +669,9 @@ export default {
     startKernel: '开启内核',
     stopKernel: '关闭内核',
     restartKernel: '重启内核',
-    plugins: '插件'
+    plugins: '插件',
   },
   commands: {
-    noMatching: '没有匹配到命令'
-  }
+    noMatching: '没有匹配到命令',
+  },
 }

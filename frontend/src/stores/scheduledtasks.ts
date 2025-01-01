@@ -4,7 +4,8 @@ import { computed, ref, watch } from 'vue'
 
 import { Notify } from '@/bridge'
 import { debounce, ignoredError } from '@/utils'
-import { PluginTriggerEvent, ScheduledTasksFilePath, ScheduledTasksType } from '@/constant'
+import { ScheduledTasksFilePath } from '@/constant/app'
+import { ScheduledTasksType, PluginTriggerEvent } from '@/enums/app'
 import { useSubscribesStore, useRulesetsStore, usePluginsStore, useLogsStore } from '@/stores'
 import {
   Readfile,
@@ -12,7 +13,7 @@ import {
   AddScheduledTask,
   RemoveScheduledTask,
   EventsOn,
-  EventsOff
+  EventsOff,
 } from '@/bridge'
 
 export type ScheduledTaskType = {
@@ -69,7 +70,7 @@ export const useScheduledTasksStore = defineStore('scheduledtasks', () => {
       name: task.name,
       startTime,
       endTime: Date.now(),
-      result
+      result,
     })
   }
 
@@ -112,7 +113,7 @@ export const useScheduledTasksStore = defineStore('scheduledtasks', () => {
       case ScheduledTasksType.RunPlugin: {
         const pluginsStores = usePluginsStore()
         return withOutput(task.plugins, async (id: string) =>
-          pluginsStores.manualTrigger(id, PluginTriggerEvent.OnTask)
+          pluginsStores.manualTrigger(id, PluginTriggerEvent.OnTask),
         )
       }
       case ScheduledTasksType.RunScript: {
@@ -165,14 +166,14 @@ export const useScheduledTasksStore = defineStore('scheduledtasks', () => {
     scheduledtasks.value
       .map((v) => v.cron)
       .sort()
-      .join()
+      .join(),
   )
 
   const _watchDisabled = computed(() =>
     scheduledtasks.value
       .map((v) => v.disabled)
       .sort()
-      .join()
+      .join(),
   )
 
   watch([_watchCron, _watchDisabled], () => {
@@ -191,6 +192,6 @@ export const useScheduledTasksStore = defineStore('scheduledtasks', () => {
     getScheduledTaskById,
     getTaskFn,
     removeScheduledTasks,
-    runScheduledTask
+    runScheduledTask,
   }
 })

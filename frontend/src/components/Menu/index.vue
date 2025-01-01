@@ -2,8 +2,6 @@
 import { useI18n } from 'vue-i18n'
 import { onMounted, onUnmounted, ref, watch, nextTick, useTemplateRef } from 'vue'
 
-import type { Menu } from '@/stores'
-
 interface Props {
   position: { x: number; y: number }
   menuList: Menu[]
@@ -62,7 +60,7 @@ watch(
   ({ x, y }) => {
     nextTick(() => fixMenuPos(x, y))
     secondaryMenu.value = undefined
-  }
+  },
 )
 
 watch([() => secondaryMenu.value, () => props.position], () => {

@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onActivated } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { ref, computed, onActivated } from 'vue'
 
-import { ProxyGroupType } from '@/constant'
 import { useMessage, usePrompt } from '@/hooks'
 import { ignoredError, sleep, handleUseProxy } from '@/utils'
 import { useAppSettingsStore, useKernelApiStore } from '@/stores'
@@ -23,10 +22,10 @@ const kernelApiStore = useKernelApiStore()
 const groups = computed(() => {
   const { proxies } = kernelApiStore
   return Object.values(proxies)
-    .filter((v) => v.all && v.name !== 'GLOBAL')
+    .filter((v) => ['Selector', 'URLTest', 'Direct'].includes(v.type) && v.name !== 'GLOBAL')
     .concat(proxies.GLOBAL || [])
     .map((group) => {
-      const all = group.all
+      const all = (group.all || [])
         .filter((proxy) => {
           const history = proxies[proxy].history || []
           const alive = history[history.length - 1]?.delay > 0
@@ -76,7 +75,7 @@ const toggleExpanded = (group: string) => {
 const handleFilter = async (group: string) => {
   const keywords =
     (await ignoredError(prompt<string>, 'Tips', filterKeywordsMap.value[group], {
-      placeholder: 'keywords'
+      placeholder: 'keywords',
     })) || ''
   try {
     new RegExp(keywords, 'i')
@@ -103,7 +102,7 @@ const handleGroupDelay = async (group: string) => {
   try {
     await getGroupDelay(
       group,
-      appSettings.app.kernel.testUrl || 'https://www.gstatic.com/generate_204'
+      appSettings.app.kernel.testUrl || 'https://www.gstatic.com/generate_204',
     )
     await kernelApiStore.refreshProviderProxies()
   } catch (error: any) {
@@ -116,7 +115,7 @@ const handleProxyDelay = async (proxy: string) => {
   try {
     const { delay } = await getProxyDelay(
       proxy,
-      appSettings.app.kernel.testUrl || 'https://www.gstatic.com/generate_204'
+      appSettings.app.kernel.testUrl || 'https://www.gstatic.com/generate_204',
     )
     const _proxy = kernelApiStore.proxies[proxy]
     _proxy.history.push({ delay })
@@ -139,8 +138,8 @@ const handleChangeTestUrl = async () => {
       'home.controller.delayUrl',
       appSettings.app.kernel.testUrl || 'https://www.gstatic.com/generate_204',
       {
-        placeholder: 'https://www.gstatic.com/generate_204'
-      }
+        placeholder: 'https://www.gstatic.com/generate_204',
+      },
     )
     appSettings.app.kernel.testUrl = url
     message.success('common.success')
@@ -209,15 +208,16 @@ onActivated(() => {
       <div class="group-info">
         <span class="group-name">{{ group.name }}</span>
         <span class="group-type">
-          {{
+          {{ group.type }}
+          <!-- {{
             t(
               {
-                [ProxyGroupType.Selector]: 'kernel.proxyGroups.type.Selector',
-                [ProxyGroupType.UrlTest]: 'kernel.proxyGroups.type.UrlTest',
-                [ProxyGroupType.Fallback]: 'kernel.proxyGroups.type.Fallback'
+                [Outbound.Selector]: 'kernel.proxyGroups.type.Selector',
+                [Outbound.Urltest]: 'kernel.proxyGroups.type.UrlTest',
+                [Outbound.Direct]: 'kernel.proxyGroups.type.Fallback'
               }[group.type]!
             )
-          }}
+          }} -->
         </span>
         <span> :: </span>
         <template v-for="(chain, index) in group.chains" :key="chain">

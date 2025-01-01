@@ -5,13 +5,14 @@ import { useI18n } from 'vue-i18n'
 import { useMessage } from '@/hooks'
 import { deepClone, sampleID } from '@/utils'
 import { ValidateCron } from '@/bridge/scheduledTasks'
-import { ScheduledTasksType, ScheduledTaskOptions } from '@/constant'
+import { ScheduledTaskOptions } from '@/constant/app'
+import { ScheduledTasksType } from '@/enums/app'
 import {
   type ScheduledTaskType,
   useScheduledTasksStore,
   useSubscribesStore,
   useRulesetsStore,
-  usePluginsStore
+  usePluginsStore,
 } from '@/stores'
 
 interface Props {
@@ -21,7 +22,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   id: '',
-  isUpdate: false
+  isUpdate: false,
 })
 
 const loading = ref(false)
@@ -37,7 +38,7 @@ const task = ref<ScheduledTaskType>({
   cron: '',
   notification: false,
   disabled: false,
-  lastTime: 0
+  lastTime: 0,
 })
 
 const { t } = useI18n()
@@ -62,7 +63,7 @@ const handleSubmit = async () => {
   switch (task.value.type) {
     case ScheduledTasksType.UpdateSubscription:
       task.value.subscriptions = task.value.subscriptions.filter((id) =>
-        subscribesStore.getSubscribeById(id)
+        subscribesStore.getSubscribeById(id),
       )
       break
     case ScheduledTasksType.UpdateRuleset:

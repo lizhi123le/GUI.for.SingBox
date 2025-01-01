@@ -3,7 +3,6 @@ import { ref, computed } from 'vue'
 
 import useI18n from '@/lang'
 import { getValue } from '@/utils'
-import type { Menu } from '@/stores'
 import vMenu from '@/directives/menu'
 
 export type Column = {
@@ -24,13 +23,13 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  menu: () => []
+  menu: () => [],
 })
 
 const sortField = ref(props.sort)
 const sortReverse = ref(true)
 const sortFunc = computed(
-  () => props.columns.find((column) => column.key === sortField.value)?.sort
+  () => props.columns.find((column) => column.key === sortField.value)?.sort,
 )
 
 const { t } = useI18n.global
@@ -73,7 +72,7 @@ const tableColumns = computed(() => {
                 justifyContent: { left: 'flext-start', center: 'center', right: 'flex-end' }[
                   column.align || 'left'
                 ],
-                minWidth: column.minWidth || 'auto'
+                minWidth: column.minWidth || 'auto',
               }"
               class="title"
             >

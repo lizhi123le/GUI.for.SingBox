@@ -17,7 +17,7 @@ const statistics = ref({
   downloadTotal: 0,
   uploadTotal: 0,
   connections: [],
-  inuse: 0
+  inuse: 0,
 })
 
 const { t } = useI18n()
@@ -105,7 +105,7 @@ onUnmounted(() => {
           :title="t(mode.label)"
           class="mode-card"
         >
-          <div class="desp">{{ t(mode.desp) }}</div>
+          <div class="desp">{{ t(mode.desc) }}</div>
         </Card>
       </div>
     </div>

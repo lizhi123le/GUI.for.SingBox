@@ -3,9 +3,10 @@ import { ref, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBool, useMessage } from '@/hooks'
-import { deepClone, ignoredError, sampleID } from '@/utils'
+import { deepClone, sampleID } from '@/utils'
 import { usePluginsStore, type PluginType } from '@/stores'
-import { PluginsTriggerOptions, DraggableOptions, PluginTrigger } from '@/constant'
+import { PluginsTriggerOptions, DraggableOptions } from '@/constant/app'
+import { PluginTrigger } from '@/enums/app'
 
 interface Props {
   id?: string
@@ -14,11 +15,10 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   id: '',
-  isUpdate: false
+  isUpdate: false,
 })
 
 const loading = ref(false)
-const oldPluginTriggers = ref()
 const pluginID = sampleID()
 const plugin = ref<PluginType>({
   id: pluginID,
@@ -33,7 +33,7 @@ const plugin = ref<PluginType>({
   configuration: [],
   disabled: false,
   install: false,
-  installed: false
+  installed: false,
 })
 
 const { t } = useI18n()
@@ -50,14 +50,8 @@ const handleSubmit = async () => {
       // Refresh the key to re-render the view
       plugin.value.key = sampleID()
       await pluginsStore.editPlugin(props.id, plugin.value)
-      if (plugin.value.triggers.sort().join('') !== oldPluginTriggers.value) {
-        pluginsStore.updatePluginTrigger(plugin.value)
-      }
     } else {
       await pluginsStore.addPlugin(plugin.value)
-      // Try to autoload the plugin
-      await ignoredError(pluginsStore.reloadPlugin, plugin.value)
-      pluginsStore.updatePluginTrigger(plugin.value)
     }
     handleCancel()
   } catch (error: any) {
@@ -75,7 +69,7 @@ const handleAddParam = async () => {
     key: '',
     component: '',
     value: [],
-    options: []
+    options: [],
   })
 }
 
@@ -127,7 +121,6 @@ if (props.isUpdate) {
   const p = pluginsStore.getPluginById(props.id)
   if (p) {
     plugin.value = deepClone(p)
-    oldPluginTriggers.value = p.triggers.sort().join('')
   }
 }
 </script>
@@ -142,7 +135,7 @@ if (props.isUpdate) {
         v-model="plugin.type"
         :options="[
           { label: 'common.http', value: 'Http' },
-          { label: 'common.file', value: 'File' }
+          { label: 'common.file', value: 'File' },
         ]"
       />
     </div>
@@ -249,7 +242,7 @@ if (props.isUpdate) {
                 { label: 'KeyValueEditor', value: 'KeyValueEditor' },
                 { label: 'Radio', value: 'Radio' },
                 { label: 'Select', value: 'Select' },
-                { label: 'Switch', value: 'Switch' }
+                { label: 'Switch', value: 'Switch' },
               ]"
               placeholder="plugin.selectComponent"
             />

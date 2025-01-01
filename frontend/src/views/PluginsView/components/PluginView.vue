@@ -4,7 +4,7 @@ import { ref, inject } from 'vue'
 
 import { useMessage } from '@/hooks'
 import { Readfile, Writefile } from '@/bridge'
-import { PluginTriggerEvent } from '@/constant'
+import { PluginTriggerEvent } from '@/enums/app'
 import { deepClone, ignoredError } from '@/utils'
 import { usePluginsStore, type PluginType } from '@/stores'
 
@@ -31,7 +31,7 @@ const handleSave = async () => {
   loading.value = true
   try {
     await Writefile(plugin.value.path, code.value)
-    await pluginsStore.reloadPlugin(plugin.value, code.value)
+    await pluginsStore.reloadPlugin(plugin.value, code.value, false)
     handleSubmit()
   } catch (error: any) {
     message.error(error)
@@ -48,7 +48,7 @@ const handleTest = async (event: PluginTriggerEvent, arg1?: any, arg2?: any) => 
   try {
     const metadata = JSON.stringify({
       ...pluginsStore.getPluginMetadata(plugin.value),
-      Mode: 'Dev'
+      Mode: 'Dev',
     })
     if (event === PluginTriggerEvent.OnSubscribe) {
       arg1 = '[]'
@@ -61,7 +61,7 @@ const handleTest = async (event: PluginTriggerEvent, arg1?: any, arg2?: any) => 
       arg2 = metadata
     }
     const fn = new window.AsyncFunction(
-      `const Plugin = ${metadata};\n${code.value}\nreturn await ${event}(${arg1}, ${arg2})`
+      `const Plugin = ${metadata};\n${code.value}\nreturn await ${event}(${arg1}, ${arg2})`,
     )
     await fn()
     message.success('common.success')

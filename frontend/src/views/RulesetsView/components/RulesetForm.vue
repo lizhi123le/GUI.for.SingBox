@@ -5,7 +5,8 @@ import { useI18n } from 'vue-i18n'
 import { useMessage } from '@/hooks'
 import { deepClone, sampleID } from '@/utils'
 import { type RuleSetType, useRulesetsStore } from '@/stores'
-import { RulesetFormat, RulesetFormatOptions } from '@/constant'
+import { RulesetFormat } from '@/enums/kernel'
+import { RulesetFormatOptions } from '@/constant/kernel'
 
 interface Props {
   id?: string
@@ -14,7 +15,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   id: '',
-  isUpdate: false
+  isUpdate: false,
 })
 
 const loading = ref(false)
@@ -28,7 +29,7 @@ const ruleset = ref<RuleSetType>({
   url: '',
   count: 0,
   path: `data/rulesets/${sampleID()}.srs`,
-  disabled: false
+  disabled: false,
 })
 
 const { t } = useI18n()
@@ -69,7 +70,7 @@ const disabled = computed(
   () =>
     !ruleset.value.tag ||
     (ruleset.value.type === 'Manual' && !ruleset.value.path) ||
-    (['Http', 'File'].includes(ruleset.value.type) && (!ruleset.value.url || !ruleset.value.path))
+    (['Http', 'File'].includes(ruleset.value.type) && (!ruleset.value.url || !ruleset.value.path)),
 )
 
 watch(
@@ -78,7 +79,7 @@ watch(
     if (v === 'Manual') {
       ruleset.value.format = RulesetFormat.Source
     }
-  }
+  },
 )
 
 watch(
@@ -92,9 +93,9 @@ watch(
     }
     ruleset.value.path = ruleset.value.path.replace(
       isJson ? '.srs' : '.json',
-      isJson ? '.json' : '.srs'
+      isJson ? '.json' : '.srs',
     )
-  }
+  },
 )
 
 if (props.isUpdate) {
@@ -116,7 +117,7 @@ if (props.isUpdate) {
         :options="[
           { label: 'common.http', value: 'Http' },
           { label: 'common.file', value: 'File' },
-          { label: 'ruleset.manual', value: 'Manual' }
+          { label: 'ruleset.manual', value: 'Manual' },
         ]"
       />
     </div>

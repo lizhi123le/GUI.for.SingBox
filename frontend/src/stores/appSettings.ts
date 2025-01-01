@@ -3,23 +3,15 @@ import { defineStore } from 'pinia'
 import { parse, stringify } from 'yaml'
 
 import i18n from '@/lang'
-import { debounce, updateTrayMenus, APP_TITLE, ignoredError } from '@/utils'
-import {
-  Theme,
-  WindowStartState,
-  Lang,
-  View,
-  Color,
-  Colors,
-  DefaultFontFamily,
-  WebviewGpuPolicy
-} from '@/constant'
+import { debounce, updateTrayMenus, APP_TITLE, ignoredError, APP_VERSION } from '@/utils'
+import { Colors, DefaultFontFamily } from '@/constant/app'
+import { Theme, WindowStartState, Lang, View, Color, WebviewGpuPolicy } from '@/enums/app'
 import {
   Readfile,
   Writefile,
   WindowSetSystemDefaultTheme,
   WindowIsMaximised,
-  WindowIsMinimised
+  WindowIsMinimised,
 } from '@/bridge'
 
 type AppSettings = {
@@ -87,9 +79,9 @@ export const useAppSettingsStore = defineStore('app-settings', () => {
     height: 0,
     exitOnClose: true,
     closeKernelOnExit: true,
-    autoSetSystemProxy: false,
+    autoSetSystemProxy: true,
     autoStartKernel: false,
-    userAgent: APP_TITLE,
+    userAgent: APP_TITLE + '/' + APP_VERSION,
     startupDelay: 30,
     connections: {
       visibility: {
@@ -106,7 +98,7 @@ export const useAppSettingsStore = defineStore('app-settings', () => {
         down: true,
         upload: true,
         download: true,
-        start: true
+        start: true,
       },
       order: [
         'metadata.type',
@@ -122,11 +114,11 @@ export const useAppSettingsStore = defineStore('app-settings', () => {
         'down',
         'upload',
         'download',
-        'start'
-      ]
+        'start',
+      ],
     },
     kernel: {
-      branch: 'main',
+      branch: 'latest',
       profile: '',
       pid: 0,
       running: false,
@@ -134,27 +126,23 @@ export const useAppSettingsStore = defineStore('app-settings', () => {
       unAvailable: true,
       cardMode: true,
       sortByDelay: false,
-      testUrl: 'https://www.gstatic.com/generate_204'
+      testUrl: 'https://www.gstatic.com/generate_204',
     },
     pluginSettings: {},
     githubApiToken: '',
     multipleInstance: false,
     addPluginToMenu: false,
-    rollingRelease: false,
-    pages: ['Overview', 'Profiles', 'Subscriptions', 'Plugins']
+    rollingRelease: true,
+    pages: ['Overview', 'Profiles', 'Subscriptions', 'Plugins'],
   })
 
   const saveAppSettings = debounce((config: string) => {
-    console.log('save app settings')
     Writefile('data/user.yaml', config)
   }, 1500)
 
   const setupAppSettings = async () => {
     const data = await ignoredError(Readfile, 'data/user.yaml')
     data && (app.value = Object.assign(app.value, parse(data)))
-
-    // compatibility code
-    app.value.pages = app.value.pages ?? ['Overview', 'Profiles', 'Subscriptions', 'Plugins']
 
     firstOpen = !!data
 
@@ -212,7 +200,7 @@ export const useAppSettingsStore = defineStore('app-settings', () => {
 
       firstOpen = false
     },
-    { deep: true }
+    { deep: true },
   )
 
   window.addEventListener(
@@ -224,7 +212,7 @@ export const useAppSettingsStore = defineStore('app-settings', () => {
         app.value.width = document.documentElement.clientWidth
         app.value.height = document.documentElement.clientHeight
       }
-    }, 1000)
+    }, 1000),
   )
 
   watch(
@@ -235,9 +223,9 @@ export const useAppSettingsStore = defineStore('app-settings', () => {
       () => app.value.addPluginToMenu,
       () => app.value.kernel.running,
       () => app.value.kernel.unAvailable,
-      () => app.value.kernel.sortByDelay
+      () => app.value.kernel.sortByDelay,
     ],
-    updateTrayMenus
+    updateTrayMenus,
   )
 
   watch(themeMode, setAppTheme, { immediate: true })

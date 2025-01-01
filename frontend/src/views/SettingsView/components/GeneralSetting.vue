@@ -4,24 +4,18 @@ import { useI18n } from 'vue-i18n'
 
 import { useMessage } from '@/hooks'
 import routes from '@/router/routes'
+import { CoreCacheFilePath } from '@/constant/kernel'
 import { APP_TITLE, APP_VERSION, getTaskSchXmlString } from '@/utils'
-import { useAppSettingsStore, useEnvStore } from '@/stores'
+import { useAppSettingsStore, useEnvStore, useKernelApiStore } from '@/stores'
 import { BrowserOpenURL, GetEnv, Writefile, Removefile, AbsolutePath } from '@/bridge'
-import {
-  Theme,
-  Lang,
-  WindowStartState,
-  Color,
-  KernelCacheFilePath,
-  DefaultFontFamily,
-  WebviewGpuPolicy
-} from '@/constant'
+import { Theme, Lang, WindowStartState, Color, WebviewGpuPolicy } from '@/enums/app'
+import { DefaultFontFamily } from '@/constant/app'
 import {
   QuerySchTask,
   CreateSchTask,
   DeleteSchTask,
   CheckPermissions,
-  SwitchPermissions
+  SwitchPermissions,
 } from '@/utils'
 
 const isAdmin = ref(false)
@@ -30,82 +24,83 @@ const isTaskScheduled = ref(false)
 const { t } = useI18n()
 const { message } = useMessage()
 const appSettings = useAppSettingsStore()
+const kernelApiStore = useKernelApiStore()
 const envStore = useEnvStore()
 
 const themes = [
   {
     label: 'settings.theme.dark',
-    value: Theme.Dark
+    value: Theme.Dark,
   },
   {
     label: 'settings.theme.light',
-    value: Theme.Light
+    value: Theme.Light,
   },
   {
     label: 'settings.theme.auto',
-    value: Theme.Auto
-  }
+    value: Theme.Auto,
+  },
 ]
 
 const colors = [
   {
     label: 'settings.color.default',
-    value: Color.Default
+    value: Color.Default,
   },
   {
     label: 'settings.color.orange',
-    value: Color.Orange
+    value: Color.Orange,
   },
   {
     label: 'settings.color.pink',
-    value: Color.Pink
+    value: Color.Pink,
   },
   {
     label: 'settings.color.red',
-    value: Color.Red
+    value: Color.Red,
   },
   {
     label: 'settings.color.skyblue',
-    value: Color.Skyblue
+    value: Color.Skyblue,
   },
   {
     label: 'settings.color.green',
-    value: Color.Green
+    value: Color.Green,
   },
   {
     label: 'settings.color.purple',
-    value: Color.Purple
-  }
+    value: Color.Purple,
+  },
 ]
 
 const langs = [
   {
     label: 'settings.lang.zh',
-    value: Lang.ZH
+    value: Lang.ZH,
   },
   {
     label: 'settings.lang.en',
-    value: Lang.EN
-  }
+    value: Lang.EN,
+  },
 ]
 
 const pages = routes.flatMap((route) => {
   if (route.meta?.hidden !== undefined) return []
   return {
     label: route.meta!.name,
-    value: route.name as string
+    value: route.name as string,
   }
 })
 
 const windowStates = [
   { label: 'settings.windowState.normal', value: WindowStartState.Normal },
-  { label: 'settings.windowState.minimised', value: WindowStartState.Minimised }
+  { label: 'settings.windowState.minimised', value: WindowStartState.Minimised },
 ]
 
 const webviewGpuPolicy = [
   { label: 'settings.webviewGpuPolicy.always', value: WebviewGpuPolicy.Always },
   { label: 'settings.webviewGpuPolicy.onDemand', value: WebviewGpuPolicy.OnDemand },
-  { label: 'settings.webviewGpuPolicy.never', value: WebviewGpuPolicy.Never }
+  { label: 'settings.webviewGpuPolicy.never', value: WebviewGpuPolicy.Never },
 ]
 
 const resetFontFamily = () => {
@@ -133,7 +128,11 @@ const handleOpenFolder = async () => {
 
 const handleClearKernelCache = async () => {
   try {
-    await Removefile(KernelCacheFilePath)
+    if (appSettings.app.kernel.running) {
+      await kernelApiStore.restartKernel(() => Removefile(CoreCacheFilePath))
+    } else {
+      await Removefile(CoreCacheFilePath)
+    }
     message.success('common.success')
   } catch (error: any) {
     message.error(error)

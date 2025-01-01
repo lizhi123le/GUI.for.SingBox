@@ -25,7 +25,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   options: () => [],
-  initialValue: () => []
+  initialValue: () => [],
 })
 
 const emits = defineEmits(['confirm', 'cancel', 'finish'])
@@ -60,7 +60,7 @@ const handleSelect = (option: PickerItem) => {
       value: option.value,
       option,
       options: props.options,
-      selected: [...selected.value]
+      selected: [...selected.value],
     })
   }
 }
@@ -88,7 +88,7 @@ const handleSelectAll = () => {
           class="item"
         >
           <div class="label">
-            <div>{{ o.label }}</div>
+            <div>{{ t(o.label) }}</div>
             <Icon
               v-show="isSelected(o.value)"
               :size="32"

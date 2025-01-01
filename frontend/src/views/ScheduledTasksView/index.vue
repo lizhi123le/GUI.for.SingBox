@@ -2,16 +2,11 @@
 import { computed, ref } from 'vue'
 import { useI18n, I18nT } from 'vue-i18n'
 
-import { View } from '@/constant'
+import { View } from '@/enums/app'
 import { useMessage, useBool } from '@/hooks'
-import { DraggableOptions } from '@/constant'
+import { DraggableOptions } from '@/constant/app'
 import { debounce, formatRelativeTime, formatDate } from '@/utils'
-import {
-  type ScheduledTaskType,
-  useAppSettingsStore,
-  useScheduledTasksStore,
-  type Menu
-} from '@/stores'
+import { type ScheduledTaskType, useAppSettingsStore, useScheduledTasksStore } from '@/stores'
 
 import ScheduledTaskForm from './components/ScheduledTaskForm.vue'
 import ScheduledTasksLogs from './components/ScheduledTasksLogs.vue'
@@ -26,15 +21,15 @@ const menuList: Menu[] = [
     label: 'scheduledtasks.run',
     handler: (id: string) => {
       scheduledTasksStore.runScheduledTask(id)
-    }
+    },
   },
   {
     label: 'scheduledtasks.log',
     handler: (id: string) => {
       taskFormTaskID.value = id
       showLogs.value = true
-    }
-  }
+    },
+  },
 ]
 
 const [showLogs, toggleLogs] = useBool(false)
@@ -95,7 +90,7 @@ const onSortUpdate = debounce(scheduledTasksStore.saveScheduledTasks, 1000)
       v-model="appSettingsStore.app.scheduledtasksView"
       :options="[
         { label: 'common.grid', value: View.Grid },
-        { label: 'common.list', value: View.List }
+        { label: 'common.list', value: View.List },
       ]"
     />
     <Button @click="handleViewLogs" type="text" class="ml-auto">
@@ -109,7 +104,7 @@ const onSortUpdate = debounce(scheduledTasksStore.saveScheduledTasks, 1000)
   <div
     v-draggable="[
       scheduledTasksStore.scheduledtasks,
-      { ...DraggableOptions, onUpdate: onSortUpdate }
+      { ...DraggableOptions, onUpdate: onSortUpdate },
     ]"
     :class="'grid-list-' + appSettingsStore.app.scheduledtasksView"
   >

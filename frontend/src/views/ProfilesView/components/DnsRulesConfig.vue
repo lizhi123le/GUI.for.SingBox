@@ -1,255 +1,261 @@
-<script setup lang="ts">
+<script lang="ts" setup>
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { computed, ref } from 'vue'
 
-import { useMessage } from '@/hooks'
-import { deepClone, sampleID, isValidInlineRuleJson } from '@/utils'
-import { type ProfileType, useRulesetsStore, type RuleSetType } from '@/stores'
-import { DnsRulesTypeOptions, DraggableOptions, RulesetFormatOptions } from '@/constant'
+import { deepClone, isValidJson } from '@/utils'
+import { useBool, useMessage } from '@/hooks'
+import { DraggableOptions } from '@/constant/app'
+import { DefaultDnsRule, DefaultDnsRules } from '@/constant/profile'
+import {
+  RuleType,
+  ClashMode,
+  RulesetType,
+  RulesetFormat,
+  RuleAction,
+  RuleActionReject,
+} from '@/enums/kernel'
+import {
+  DnsRuleTypeOptions,
+  DnsRuleActionOptions,
+  DnsRuleActionRejectOptions,
+} from '@/constant/kernel'
 
 interface Props {
-  dnsConfig: ProfileType['dnsConfig']
-  proxyGroups: ProfileType['proxyGroupsConfig']
+  inboundOptions: { label: string; value: string }[]
+  outboundOptions: { label: string; value: string }[]
+  serversOptions: { label: string; value: string }[]
+  ruleSet: IRuleSet[]
 }
 
 const props = defineProps<Props>()
 
-const rules = defineModel<ProfileType['dnsRulesConfig']>({ default: [] })
+const model = defineModel<IDNSRule[]>({ default: DefaultDnsRules() })
 
-let updateRuleId = 0
-const showModal = ref(false)
-
-const fields = ref({
-  id: sampleID(),
-  type: 'rule_set',
-  payload: '',
-  server: '',
-  invert: false,
-  'disable-cache': false,
-  'ruleset-name': '',
-  'ruleset-format': 'binary',
-  'download-detour': '',
-  'client-subnet': ''
-})
-
-const dnsOptions = computed(() => [
-  { label: t('kernel.dns.local-dns'), value: 'local-dns' },
-  { label: t('kernel.dns.remote-dns'), value: 'remote-dns' },
-  { label: t('kernel.dns.resolver-dns'), value: 'resolver-dns' },
-  { label: t('kernel.dns.remote-resolver-dns'), value: 'remote-resolver-dns' },
-  ...(props.dnsConfig.fakeip ? [{ label: t('kernel.dns.fakeip-dns'), value: 'fakeip-dns' }] : []),
-  { label: t('kernel.dns.block'), value: 'block' }
-])
-
-const downloadProxyOptions = computed(() => [
-  { label: 'direct', value: 'direct' },
-  ...props.proxyGroups.map(({ id, tag }) => ({ label: tag, value: id }))
-])
-const supportPayload = computed(
-  () =>
-    ![
-      'rule_set',
-      'fakeip',
-      'ip_is_private',
-      'src_ip_is_private',
-      'rule_set_ipcidr_match_source'
-    ].includes(fields.value.type)
-)
-const supportServer = computed(() => 'fakeip' !== fields.value.type)
-const multilinePayload = computed(() => 'inline' === fields.value.type)
+let ruleId = 0
+const fields = ref<IDNSRule>(DefaultDnsRule())
 
 const { t } = useI18n()
+const [showEditModal] = useBool(false)
 const { message } = useMessage()
-const rulesetsStore = useRulesetsStore()
 
 const handleAdd = () => {
-  updateRuleId = -1
-  fields.value = {
-    id: sampleID(),
-    type: 'rule_set',
-    payload: '',
-    server: 'local-dns',
-    invert: false,
-    'disable-cache': false,
-    'ruleset-name': '',
-    'ruleset-format': 'binary',
-    'download-detour': '',
-    'client-subnet': ''
-  }
-  showModal.value = true
+  ruleId = -1
+  fields.value = DefaultDnsRule()
+  showEditModal.value = true
 }
 
 defineExpose({ handleAdd })
 
-const handleDeleteRule = (index: number) => {
-  rules.value.splice(index, 1)
-}
-
-const handleEditRule = (index: number) => {
-  updateRuleId = index
-  fields.value = deepClone(rules.value[index])
-  showModal.value = true
-}
-
 const handleAddEnd = () => {
-  if (updateRuleId !== -1) {
-    rules.value[updateRuleId] = fields.value
+  if (ruleId !== -1) {
+    model.value[ruleId] = fields.value
   } else {
-    rules.value.unshift(fields.value)
+    model.value.unshift(fields.value)
   }
 }
 
-const handleUseRuleset = (ruleset: RuleSetType) => {
+const handleEdit = (index: number) => {
+  ruleId = index
+  fields.value = deepClone(model.value[index])
+  showEditModal.value = true
+}
+
+const handleDeleteRule = (index: number) => {
+  model.value.splice(index, 1)
+}
+
+const handleUse = (ruleset: any) => {
   fields.value.payload = ruleset.id
 }
 
-const hasError = (r: ProfileType['dnsRulesConfig'][0]) => {
-  if (r.type !== 'inline') return false
-  return !isValidInlineRuleJson(r.payload)
+const showLost = () => message.warn('kernel.route.rules.invalid')
+
+const hasLost = (rule: IDNSRule) => {
+  const checkServer = () => {
+    if (rule.action === RuleAction.Route) {
+      if (!props.serversOptions.find((v) => v.value === rule.server)) {
+        return true
+      }
+      return false
+    } else if (rule.action === RuleAction.RouteOptions) {
+      return !isValidJson(rule.server)
+    } else if (rule.action === RuleAction.Reject) {
+      return ![RuleActionReject.Default, RuleActionReject.Drop].includes(rule.server as any)
+    }
+    return false
+  }
+
+  const checkPayload = () => {
+    if (rule.type === RuleType.Inbound) {
+      return !props.inboundOptions.find((v) => v.value === rule.payload)
+    }
+    if (rule.type === RuleType.Outbound) {
+      return rule.payload !== 'any' && !props.outboundOptions.find((v) => v.value === rule.payload)
+    }
+    if (rule.type === RuleType.RuleSet) {
+      return !props.ruleSet.find((v) => v.id === rule.payload)
+    }
+    if (rule.type === RuleType.Inline) {
+      return !isValidJson(rule.payload)
+    }
+    return !rule.payload
+  }
+
+  return checkServer() || checkPayload()
 }
 
-const showError = () => message.warn('kernel.rules.inlineRuleError')
-
-const generateRuleDesc = (rule: ProfileType['dnsRulesConfig'][0]) => {
-  const { type, payload, server, invert } = rule
-  const opt = DnsRulesTypeOptions.filter((v) => v.value === type)
-  let ruleStr = opt.length > 0 ? t(opt[0].label) : type
-  if (
-    !['ip_is_private', 'src_ip_is_private', 'fakeip', 'rule_set_ipcidr_match_source'].includes(type)
-  ) {
-    if (type === 'rule_set') {
-      const rulesetsStore = useRulesetsStore()
-      const ruleset = rulesetsStore.getRulesetById(payload)
-      if (ruleset) {
-        ruleStr += ',' + ruleset.tag
-      }
-    } else if (type === 'rule_set_url') {
-      ruleStr += ',' + rule['ruleset-name']
-    } else {
-      ruleStr += ',' + payload
-    }
+const renderRule = (rule: IDNSRule) => {
+  const { type, payload, server, action, invert } = rule
+  const children: string[] = [type]
+  let _payload = payload
+  if (type === RuleType.RuleSet) {
+    const tag = props.ruleSet.find((v) => v.id === rule.payload)?.tag || rule.payload
+    _payload = tag
+  } else if (type === RuleType.Inline && payload.includes('__is_fake_ip')) {
+    _payload = 'FakeIP'
   }
-
   if (invert) {
-    ruleStr += ',' + t('kernel.rules.invert')
+    _payload += ` (invert) `
   }
-
-  if (type !== 'fakeip') {
-    ruleStr += ',' + t('kernel.dns.' + server)
+  children.push(_payload, action)
+  if (server) {
+    const proxy = props.serversOptions.find((v) => v.value === server)?.label || server
+    children.push(proxy)
   }
-  return ruleStr
+  return children.join(',')
 }
 </script>
-
 <template>
-  <div>
-    <div v-draggable="[rules, DraggableOptions]">
-      <Card v-for="(r, index) in rules" :key="r.id" class="rules-item">
-        <div class="name">
-          <span v-if="hasError(r)" @click="showError" class="warn"> [ ! ] </span>
-          {{ generateRuleDesc(r) }}
-        </div>
-        <div class="action">
-          <Button @click="handleEditRule(index)" icon="edit" type="text" size="small" />
-          <Button @click="handleDeleteRule(index)" icon="delete" type="text" size="small" />
-        </div>
-      </Card>
-    </div>
+  <Empty v-if="model.length === 0">
+    <template #description>
+      <Button @click="handleAdd" icon="add" type="primary" size="small">
+        {{ t('common.add') }}
+      </Button>
+    </template>
+  </Empty>
+
+  <div v-draggable="[model, DraggableOptions]">
+    <Card v-for="(rule, index) in model" :key="rule.id" class="rule-item">
+      <div class="font-bold">
+        <span v-if="hasLost(rule)" @click="showLost" class="warn"> [ ! ] </span>
+        {{ renderRule(rule) }}
+      </div>
+      <div class="ml-auto">
+        <Button @click="handleEdit(index)" icon="edit" type="text" size="small" />
+        <Button @click="handleDeleteRule(index)" icon="delete" type="text" size="small" />
+      </div>
+    </Card>
   </div>
 
   <Modal
-    v-model:open="showModal"
+    v-model:open="showEditModal"
     @ok="handleAddEnd"
-    title="profile.rule"
+    title="kernel.dns.tab.rules"
     max-width="80"
     max-height="80"
   >
     <div class="form-item">
-      {{ t('kernel.rules.type.name') }}
-      <Select v-model="fields.type" :options="DnsRulesTypeOptions" />
-    </div>
-    <div v-show="supportPayload" class="form-item">
-      {{ t('kernel.rules.payload') }}
-      <Input v-show="!multilinePayload" v-model="fields.payload" autofocus />
-      <CodeViewer
-        v-show="multilinePayload"
-        v-model="fields.payload"
-        lang="json"
-        editable
-        class="code-viewer"
-      />
-    </div>
-    <div v-show="supportServer" class="form-item">
-      DNS
-      <Select v-model="fields.server" :options="dnsOptions" />
+      {{ t('kernel.dns.rules.type') }}
+      <Select v-model="fields.type" :options="DnsRuleTypeOptions" />
     </div>
     <div class="form-item">
-      {{ t('kernel.rules.invert') }}
+      {{ t('kernel.dns.rules.action') }}
+      <Radio v-model="fields.action" :options="DnsRuleActionOptions" />
+    </div>
+    <div class="form-item">
+      {{ t('kernel.route.rules.invert') }}
       <Switch v-model="fields.invert" />
     </div>
-    <div class="form-item">
-      {{ t('kernel.rules.disable-cache') }}
-      <Switch v-model="fields['disable-cache']" />
+    <div v-if="fields.type !== RuleType.RuleSet" class="form-item">
+      {{ t('kernel.dns.rules.payload') }}
+      <Radio
+        v-if="fields.type === RuleType.ClashMode"
+        v-model="fields.payload"
+        :options="[
+          {
+            label: 'kernel.global',
+            value: ClashMode.Global,
+          },
+          {
+            label: 'kernel.direct',
+            value: ClashMode.Direct,
+          },
+        ]"
+      />
+      <Select
+        v-else-if="fields.type === RuleType.Inbound"
+        v-model="fields.payload"
+        :options="inboundOptions"
+      />
+      <Select
+        v-else-if="fields.type === RuleType.Outbound"
+        v-model="fields.payload"
+        :options="[{ label: 'any', value: 'any' }, ...outboundOptions]"
+      />
+      <CodeViewer
+        v-else-if="fields.type === RuleType.Inline"
+        v-model="fields.payload"
+        editable
+        lang="json"
+        style="min-width: 320px"
+      />
+      <Switch
+        v-else-if="fields.type === RuleType.IpIsPrivate"
+        :model-value="fields.payload === 'true'"
+        @change="(val) => (fields.payload = val ? 'false' : 'true')"
+      />
+      <Input v-else v-model="fields.payload" autofocus />
     </div>
-    <div class="form-item">
-      {{ t('kernel.dns.client-subnet') }}
-      <Input v-model="fields['client-subnet']" editable />
-    </div>
-
-    <template v-if="fields.type === 'rule_set'">
-      <Divider>{{ t('kernel.rules.rulesets') }}</Divider>
-      <div class="rulesets">
-        <Empty v-if="rulesetsStore.rulesets.length === 0" :description="t('kernel.rules.empty')" />
-        <template v-else>
-          <Card
-            v-for="ruleset in rulesetsStore.rulesets"
-            :key="ruleset.tag"
-            @click="handleUseRuleset(ruleset)"
-            :selected="fields.payload === ruleset.id"
-            :title="ruleset.tag"
-            class="ruleset"
-          >
-            {{ ruleset.path }}
-          </Card>
-        </template>
+    <template v-if="fields.action === RuleAction.Route">
+      <div class="form-item">
+        {{ t('kernel.dns.rules.server') }}
+        <Select v-model="fields.server" :options="serversOptions" />
       </div>
     </template>
-
-    <template v-if="fields.type === 'rule_set_url'">
-      <Divider>{{ t('kernel.rules.ruleset') }}</Divider>
-      <div class="ruleseturl">
-        <div class="form-item">
-          {{ t('kernel.rules.name') }}
-          <Input v-model="fields['ruleset-name']" />
-        </div>
-        <div class="form-item">
-          {{ t('ruleset.format.name') }}
-          <Select v-model="fields['ruleset-format']" :options="RulesetFormatOptions" />
-        </div>
-        <div class="form-item">
-          {{ t('kernel.rules.download-detour') }}
-          <Select v-model="fields['download-detour']" :options="downloadProxyOptions" />
-        </div>
+    <template v-else-if="fields.action === RuleAction.RouteOptions">
+      <div class="form-item">
+        {{ t('kernel.route.rules.routeOptions') }}
+        <CodeViewer v-model="fields.server" editable lang="json" style="min-width: 320px" />
+      </div>
+    </template>
+    <template v-else-if="fields.action === RuleAction.Reject">
+      <div class="form-item">
+        {{ t('kernel.route.rules.action.rejectMethod') }}
+        <Radio v-model="fields.server" :options="DnsRuleActionRejectOptions" />
+      </div>
+    </template>
+    <template v-if="fields.type === RuleType.RuleSet">
+      <Divider>{{ t('kernel.route.tab.rule_set') }}</Divider>
+      <div class="rulesets">
+        <Empty v-if="ruleSet.length === 0" :description="t('kernel.route.rule_set.empty')" />
+        <template v-else>
+          <Card
+            v-for="ruleset in ruleSet"
+            :key="ruleset.tag"
+            :title="ruleset.tag"
+            @click="handleUse(ruleset)"
+            :selected="fields.payload === ruleset.id"
+            v-tips="ruleset.type"
+            class="ruleset"
+          >
+            {{ ruleset.type }}
+            {{ ruleset.type === RulesetType.Inline ? RulesetFormat.Source : ruleset.format }}
+          </Card>
+        </template>
       </div>
     </template>
   </Modal>
 </template>
 
 <style lang="less" scoped>
-.rules-item {
+.rule-item {
   display: flex;
   align-items: center;
   padding: 0 8px;
   margin-bottom: 2px;
-  .name {
-    font-weight: bold;
-    .warn {
-      color: rgb(200, 193, 11);
-      cursor: pointer;
-    }
-  }
-  .action {
-    margin-left: auto;
+  .warn {
+    color: rgb(200, 193, 11);
+    cursor: pointer;
   }
 }
 
@@ -260,11 +266,9 @@ const generateRuleDesc = (rule: ProfileType['dnsRulesConfig'][0]) => {
     width: calc(33.3333% - 16px);
     margin: 8px;
     font-size: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-}
-
-.code-viewer {
-  min-width: 50%;
-  max-width: 90%;
 }
 </style>

@@ -2,17 +2,16 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { type ProfileType } from '@/stores'
-import { MixinConfigDefaults, ScriptConfigDefaults } from '@/constant'
+import { DefaultMixin, DefaultScript } from '@/constant/profile'
 
 const model = defineModel<{
-  mixin: ProfileType['mixinConfig']
-  script: ProfileType['scriptConfig']
+  mixin: IProfile['mixin']
+  script: IProfile['script']
 }>({
   default: {
-    mixin: MixinConfigDefaults(),
-    script: ScriptConfigDefaults()
-  }
+    mixin: DefaultMixin(),
+    script: DefaultScript(),
+  },
 })
 
 const { t } = useI18n()
@@ -21,12 +20,12 @@ const activeTab = ref('mixin')
 
 const tabItems = [
   { key: 'mixin', tab: 'profile.mixinSettings.name' },
-  { key: 'script', tab: 'profile.scriptSettings.name' }
+  { key: 'script', tab: 'profile.scriptSettings.name' },
 ]
 
 const MixinPriorityOptions = [
   { label: 'profile.mixinSettings.mixin', value: 'mixin' },
-  { label: 'profile.mixinSettings.gui', value: 'gui' }
+  { label: 'profile.mixinSettings.gui', value: 'gui' },
 ]
 </script>
 

@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useBool, useMessage } from '@/hooks'
 import { deepClone, sampleID, getUserAgent } from '@/utils'
 import { type SubscribeType, useSubscribesStore } from '@/stores'
-import { ProxyTypeOptions, DefaultExcludeProtocols } from '@/constant'
+import { DefaultExcludeProtocols } from '@/constant/kernel'
 
 interface Props {
   id?: string
@@ -14,7 +14,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   id: '',
-  isUpdate: false
+  isUpdate: false,
 })
 
 const loading = ref(false)
@@ -39,7 +39,7 @@ const sub = ref<SubscribeType>({
   disabled: false,
   inSecure: false,
   userAgent: '',
-  proxies: []
+  proxies: [],
 })
 
 const { t } = useI18n()
@@ -89,7 +89,7 @@ if (props.isUpdate) {
         :options="[
           { label: 'common.http', value: 'Http' },
           { label: 'common.file', value: 'File' },
-          { label: 'subscribe.manual', value: 'Manual' }
+          { label: 'subscribe.manual', value: 'Manual' },
         ]"
       />
     </div>
@@ -135,7 +135,7 @@ if (props.isUpdate) {
         <div class="name">{{ t('subscribe.includeProtocol') }}</div>
         <Input
           v-model="sub.includeProtocol"
-          :placeholder="ProxyTypeOptions.map((v) => v.label).join('|')"
+          placeholder="direct|mixed|socks|http..."
           auto-size
           class="input"
         />
@@ -144,7 +144,7 @@ if (props.isUpdate) {
         <div class="name">{{ t('subscribe.excludeProtocol') }}</div>
         <Input
           v-model="sub.excludeProtocol"
-          :placeholder="ProxyTypeOptions.map((v) => v.label).join('|')"
+          placeholder="direct|mixed|socks|http..."
           auto-size
           class="input"
         />

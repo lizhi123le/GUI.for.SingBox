@@ -4,9 +4,9 @@ import { ref, computed, inject } from 'vue'
 
 import { useBool, useMessage } from '@/hooks'
 import { deepClone, ignoredError, sampleID } from '@/utils'
-import { ProxyTypeOptions, DraggableOptions } from '@/constant'
+import { DraggableOptions } from '@/constant/app'
 import { ClipboardSetText, Readfile, Writefile } from '@/bridge'
-import { type Menu, type SubscribeType, useSubscribesStore } from '@/stores'
+import { type SubscribeType, useSubscribesStore } from '@/stores'
 
 interface Props {
   sub: SubscribeType
@@ -34,11 +34,17 @@ const keywordsRegexp = computed(() => {
 })
 
 const filteredProxyTypeOptions = computed(() => {
-  const protocolList = ProxyTypeOptions.map((v) => {
-    const count = sub.value.proxies.filter((vv) => vv.type === v.value).length
-    return { ...v, label: v.label + `(${count})`, count }
-  }).filter((v) => v.count)
-  return [{ label: 'All', value: '', count: 0 }].concat(protocolList)
+  const proxyProtocols = sub.value.proxies.reduce((p, c) => {
+    p[c.type] = (p[c.type] || 0) + 1
+    return p
+  }, {} as Recordable)
+  return [{ label: 'All', value: '', count: 0 }].concat(
+    Object.entries(proxyProtocols).map(([label, count]) => ({
+      label: `${label}(${count})`,
+      value: label,
+      count,
+    })),
+  )
 })
 
 const filteredProxies = computed(() => {
@@ -66,7 +72,7 @@ const menus: Menu[] = [
       } catch (error: any) {
         message.error(error)
       }
-    }
+    },
   },
   {
     label: 'common.copy',
@@ -78,7 +84,7 @@ const menus: Menu[] = [
       } catch (error: any) {
         message.error(error)
       }
-    }
+    },
   },
   {
     label: 'common.edit',
@@ -92,7 +98,7 @@ const menus: Menu[] = [
       } catch (error: any) {
         message.error(error)
       }
-    }
+    },
   },
   {
     label: 'common.delete',
@@ -101,8 +107,8 @@ const menus: Menu[] = [
       if (idx !== -1) {
         sub.value.proxies.splice(idx, 1)
       }
-    }
-  }
+    },
+  },
 ]
 
 const { t } = useI18n()
@@ -118,7 +124,7 @@ const handleSave = async () => {
     const { path, proxies, id } = sub.value
     await initAllFieldsProxies()
     const filteredProxies = allFieldsProxies.value.filter((v: any) =>
-      proxies.some((vv) => vv.tag === v.tag)
+      proxies.some((vv) => vv.tag === v.tag),
     )
     const sortedArray = proxies.map((v) => filteredProxies.find((vv) => vv.tag === v.tag))
     await Writefile(path, JSON.stringify(sortedArray, null, 2))
@@ -161,14 +167,14 @@ const onEditEnd = async () => {
     allFieldsProxies.value.splice(allFieldsProxiesIdx, 1, proxy)
     sub.value.proxies.splice(subProxiesIdx, 1, {
       ...sub.value.proxies[subProxiesIdx],
-      tag: proxy.tag
+      tag: proxy.tag,
     })
   } else {
     allFieldsProxies.value.push(proxy)
     sub.value.proxies.push({
       id: sampleID(),
       tag: proxy.tag,
-      type: proxy.type
+      type: proxy.type,
     })
   }
 }

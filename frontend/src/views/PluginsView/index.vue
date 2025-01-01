@@ -2,17 +2,12 @@
 import { ref, computed } from 'vue'
 import { useI18n, I18nT } from 'vue-i18n'
 
-import { useMessage, useConfirm } from '@/hooks'
-import { debounce, ignoredError } from '@/utils'
-import { Removefile, BrowserOpenURL } from '@/bridge'
-import { DraggableOptions, PluginTriggerEvent, PluginTrigger, View } from '@/constant'
-import {
-  usePluginsStore,
-  useAppSettingsStore,
-  useEnvStore,
-  type PluginType,
-  type Menu
-} from '@/stores'
+import { useMessage } from '@/hooks'
+import { debounce } from '@/utils'
+import { BrowserOpenURL } from '@/bridge'
+import { DraggableOptions } from '@/constant/app'
+import { PluginTriggerEvent, PluginTrigger, View } from '@/enums/app'
+import { usePluginsStore, useAppSettingsStore, useEnvStore, type PluginType } from '@/stores'
 
 import PluginForm from './components/PluginForm.vue'
 import PluginView from './components/PluginView.vue'
@@ -40,20 +35,19 @@ const menuList: Menu[] = [
         console.log(error)
         message.error(error)
       }
-    }
+    },
   },
   {
     label: 'common.openFile',
     handler: async (id: string) => {
       const plugin = pluginsStore.getPluginById(id)
       BrowserOpenURL(envStore.env.basePath + '/' + plugin!.path)
-    }
-  }
+    },
+  },
 ]
 
 const { t } = useI18n()
 const { message } = useMessage()
-const { confirm } = useConfirm()
 
 const envStore = useEnvStore()
 const pluginsStore = usePluginsStore()
@@ -95,17 +89,7 @@ const handleUpdatePlugin = async (s: PluginType) => {
 
 const handleDeletePlugin = async (p: PluginType) => {
   try {
-    if (p.path.startsWith('data')) {
-      await ignoredError(Removefile, p.path)
-    }
     await pluginsStore.deletePlugin(p.id)
-
-    // Remove configuration
-    if (appSettingsStore.app.pluginSettings[p.id]) {
-      if (await confirm('Tips', 'plugins.removeConfiguration').catch(() => 0)) {
-        delete appSettingsStore.app.pluginSettings[p.id]
-      }
-    }
   } catch (error: any) {
     console.error('handleDeletePlugin: ', error)
     message.error(error)
@@ -164,14 +148,14 @@ const generateMenus = (p: PluginType) => {
       handler: async () => {
         pluginFormID.value = p.id
         showPluginConfiguration.value = true
-      }
+      },
     })
   }
 
   if (Object.keys(p.menus).length !== 0) {
     builtInMenus.push({
       label: '',
-      separator: true
+      separator: true,
     })
   }
 
@@ -186,7 +170,7 @@ const generateMenus = (p: PluginType) => {
       } finally {
         p.running = false
       }
-    }
+    },
   }))
 
   return builtInMenus.concat(...pluginMenus)
@@ -218,7 +202,7 @@ const onSortUpdate = debounce(pluginsStore.savePlugins, 1000)
       v-model="appSettingsStore.app.pluginsView"
       :options="[
         { label: 'common.grid', value: View.Grid },
-        { label: 'common.list', value: View.List }
+        { label: 'common.list', value: View.List },
       ]"
     />
     <Button @click="handleImportPlugin" type="link" class="ml-auto">

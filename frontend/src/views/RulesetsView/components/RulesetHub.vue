@@ -6,7 +6,7 @@ import { useMessage, useAlert } from '@/hooks'
 import { ignoredError } from '@/utils'
 import { useRulesetsStore } from '@/stores'
 import { HttpGet, Readfile, Writefile } from '@/bridge'
-import { RulesetFormat } from '@/constant'
+import { RulesetFormat } from '@/enums/kernel'
 
 type RulesetHub = {
   geosite: string
@@ -74,7 +74,7 @@ const handleAddRuleset = async (ruleset: RulesetHub['list'][number], format: Rul
       format,
       path: 'data/rulesets/' + file,
       url,
-      count: ruleset.count
+      count: ruleset.count,
     })
     const { success } = message.info('rulesets.updating')
     await rulesetsStore.updateRuleset(id)

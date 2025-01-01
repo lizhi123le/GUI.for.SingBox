@@ -3,7 +3,8 @@ import { useI18n } from 'vue-i18n'
 import { computed, ref } from 'vue'
 
 import { useMessage } from '@/hooks'
-import { KernelWorkDirectory, getKernelFileName } from '@/constant'
+import { CoreWorkingDirectory } from '@/constant/kernel'
+import { getKernelFileName } from '@/utils'
 import { useAppSettingsStore, useEnvStore, useKernelApiStore } from '@/stores'
 import { getGitHubApiAuthorization, GrantTUNPermission, ignoredError } from '@/utils'
 import {
@@ -17,7 +18,7 @@ import {
   GetEnv,
   Makedir,
   AbsolutePath,
-  BrowserOpenURL
+  BrowserOpenURL,
 } from '@/bridge'
 
 const releaseUrl = 'https://api.github.com/repos/SagerNet/sing-box/releases/latest'
@@ -55,7 +56,7 @@ const downloadCore = async () => {
   downloadLoading.value = true
   try {
     const { body } = await HttpGet<Record<string, any>>(releaseUrl, {
-      Authorization: getGitHubApiAuthorization()
+      Authorization: getGitHubApiAuthorization(),
     })
     const { os, arch } = await GetEnv()
 
@@ -86,7 +87,7 @@ const downloadCore = async () => {
       (progress, total) => {
         message.update(id, t('common.downloading') + ((progress / total) * 100).toFixed(2) + '%')
       },
-      { CancelId: 'download-stable-core' }
+      { CancelId: 'download-stable-core' },
     ).catch((err) => {
       message.destroy(id)
       throw err
@@ -96,13 +97,13 @@ const downloadCore = async () => {
 
     const fileName = await getKernelFileName()
 
-    const kernelFilePath = KernelWorkDirectory + '/' + fileName
+    const kernelFilePath = CoreWorkingDirectory + '/' + fileName
 
     await ignoredError(Movefile, kernelFilePath, kernelFilePath + '.bak')
 
     if (suffix === '.zip') {
-      await UnzipZIPFile(tmp, KernelWorkDirectory)
-      const tmpPath = KernelWorkDirectory + `/sing-box-${name}-${os}-${arch}${legacy}`
+      await UnzipZIPFile(tmp, CoreWorkingDirectory)
+      const tmpPath = CoreWorkingDirectory + `/sing-box-${name}-${os}-${arch}${legacy}`
       await Movefile(tmpPath + '/' + fileName, kernelFilePath)
       await Removefile(tmpPath)
     } else {
@@ -110,9 +111,9 @@ const downloadCore = async () => {
         'xzvf',
         await AbsolutePath(tmp),
         '-C',
-        await AbsolutePath(KernelWorkDirectory),
+        await AbsolutePath(CoreWorkingDirectory),
         '--strip-components',
-        '1'
+        '1',
       ])
     }
 
@@ -140,7 +141,7 @@ const getLocalVersion = async (showTips = false) => {
   localVersionLoading.value = true
   try {
     const fileName = await getKernelFileName()
-    const kernelFilePath = KernelWorkDirectory + '/' + fileName
+    const kernelFilePath = CoreWorkingDirectory + '/' + fileName
     const res = await Exec(kernelFilePath, ['version'])
     versionDetail.value = res.trim()
     return (
@@ -163,7 +164,7 @@ const getRemoteVersion = async (showTips = false) => {
   remoteVersionLoading.value = true
   try {
     const { body } = await HttpGet<Record<string, any>>(releaseUrl, {
-      Authorization: getGitHubApiAuthorization()
+      Authorization: getGitHubApiAuthorization(),
     })
     const { name } = body
     return name as string
@@ -192,7 +193,7 @@ const handleRestartKernel = async () => {
 
 const handleGrantPermission = async () => {
   const fileName = await getKernelFileName()
-  const kernelFilePath = KernelWorkDirectory + '/' + fileName
+  const kernelFilePath = CoreWorkingDirectory + '/' + fileName
   await GrantTUNPermission(kernelFilePath)
   message.success('common.success')
 }
@@ -238,12 +239,12 @@ initVersion()
   </div>
   <div class="tags">
     <Tag @click="updateLocalVersion(true)" style="cursor: pointer">
-      {{ t('kernel.local') }}
+      {{ t('settings.kernel.local') }}
       :
       {{ localVersionLoading ? 'Loading' : localVersion || t('kernel.notFound') }}
     </Tag>
     <Tag @click="updateRemoteVersion(true)" style="cursor: pointer">
-      {{ t('kernel.remote') }}
+      {{ t('settings.kernel.remote') }}
       :
       {{ remoteVersionLoading ? 'Loading' : remoteVersion }}
     </Tag>
@@ -254,7 +255,7 @@ initVersion()
       size="small"
       type="primary"
     >
-      {{ t('kernel.update') }} : {{ remoteVersion }}
+      {{ t('settings.kernel.update') }} : {{ remoteVersion }}
     </Button>
     <Button
       v-show="!localVersionLoading && !remoteVersionLoading && needRestart"
@@ -263,7 +264,7 @@ initVersion()
       size="small"
       type="primary"
     >
-      {{ t('kernel.restart') }}
+      {{ t('settings.kernel.restart') }}
     </Button>
   </div>
   <div class="detail">

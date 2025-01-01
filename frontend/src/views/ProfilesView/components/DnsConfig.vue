@@ -1,108 +1,166 @@
-<script setup lang="ts">
-import { computed } from 'vue'
+<script lang="ts" setup>
 import { useI18n } from 'vue-i18n'
+import { computed, ref, useTemplateRef } from 'vue'
 
-import { type ProfileType } from '@/stores'
-import { DomainStrategyOptions, FinalDnsOptions, DnsConfigDefaults } from '@/constant'
+import { sampleID } from '@/utils'
+import { usePicker } from '@/hooks'
+import { DomainStrategyOptions } from '@/constant/kernel'
+import { RuleAction, RuleType, Strategy } from '@/enums/kernel'
+import { DefaultDns, DefaultFakeIPDnsRule } from '@/constant/profile'
+
+import DnsRulesConfig from './DnsRulesConfig.vue'
+import DnsServersConfig from './DnsServersConfig.vue'
+import type { PickerItem } from '@/components/Picker/index.vue'
 
 interface Props {
-  proxyGroups: ProfileType['proxyGroupsConfig']
+  inboundOptions: { label: string; value: string }[]
+  outboundOptions: { label: string; value: string }[]
+  ruleSet: IRuleSet[]
 }
 
-const fields = defineModel<ProfileType['dnsConfig']>({
-  default: DnsConfigDefaults(['1', '2', '3'])
+defineProps<Props>()
+
+const model = defineModel<IDNS>({
+  default: DefaultDns(),
 })
-const props = defineProps<Props>()
+
+const serversOptions = computed(() =>
+  model.value.servers.map((v) => ({ label: v.tag, value: v.id })),
+)
+
+const activeKey = ref('common')
+const rulesConfigRef = useTemplateRef('rulesConfigRef')
+const serversConfigRef = useTemplateRef('serversConfigRef')
+const tabs = [
+  { key: 'common', tab: 'kernel.dns.tab.common' },
+  { key: 'servers', tab: 'kernel.dns.tab.servers' },
+  { key: 'rules', tab: 'kernel.dns.tab.rules' },
+]
 
 const { t } = useI18n()
+const { picker } = usePicker()
 
-const proxyOptions = computed(() => [
-  ...props.proxyGroups.map(({ id, tag }) => ({ label: tag, value: id })),
-  { label: 'direct', value: 'direct' },
-  { label: 'block', value: 'block' },
-  { label: t('kernel.dns.default'), value: '' }
-])
+const handleAdd = () => {
+  const handlerMap: Record<string, (() => void) | undefined> = {
+    common: () => {},
+    rules: rulesConfigRef.value?.handleAdd,
+    servers: serversConfigRef.value?.handleAdd,
+  }
+  handlerMap[activeKey.value]?.()
+}
+
+const onFakeIPChange = async (enabled: boolean) => {
+  if (!enabled) return
+
+  const fakeip_server = model.value.servers.find((v) => v.address === 'fakeip')?.id
+  const fakeip_rule = model.value.rules.find(
+    (v) => v.type === RuleType.Inline && v.payload.includes('__is_fake_ip'),
+  )
+
+  if (fakeip_server && fakeip_rule) return
+
+  const initialValue = [...(!fakeip_server ? ['0'] : []), ...(!fakeip_rule ? ['1'] : [])]
+
+  const options: PickerItem[] = [
+    ...(!fakeip_server ? [{ label: 'kernel.dns.fakeip.addServer', value: '0' }] : []),
+    ...(!fakeip_rule ? [{ label: 'kernel.dns.fakeip.addRules', value: '1' }] : []),
+  ]
+
+  const actions = await picker
+    .multi<string[]>('Tip', options, initialValue)
+    .catch(() => [] as string[])
+
+  const _fakeip_server = fakeip_server || sampleID()
+  if (actions.includes('0')) {
+    model.value.servers.push({
+      id: _fakeip_server,
+      tag: 'FakeIP-DNS',
+      address: 'fakeip',
+      address_resolver: '',
+      detour: '',
+      strategy: Strategy.Default,
+      client_subnet: '',
+    })
+    if (fakeip_rule) {
+      fakeip_rule.server = _fakeip_server
+    }
+  }
+  if (actions.includes('1')) {
+    const fakeip_rule: IDNSRule = {
+      id: sampleID(),
+      type: RuleType.Inline,
+      payload: JSON.stringify(DefaultFakeIPDnsRule(), null, 2),
+      action: RuleAction.Route,
+      server: _fakeip_server,
+      invert: false,
+    }
+    const idx = model.value.rules.findIndex((v) => v.payload === 'any')
+    model.value.rules.splice(idx + 1, 0, fakeip_rule)
+  }
+}
+
+defineExpose({ handleAdd })
 </script>
 
 <template>
-  <div class="form-item">
-    {{ t('kernel.dns.enable') }}
-    <Switch v-model="fields.enable" />
-  </div>
-  <template v-if="fields.enable">
-    <div class="form-item">
-      {{ t('kernel.dns.local-dns') }}
-      <Input v-model="fields['local-dns']" editable />
-    </div>
-    <div class="form-item">
-      {{ t('kernel.dns.remote-dns') }}
-      <Input v-model="fields['remote-dns']" editable />
-    </div>
-    <div class="form-item">
-      {{ t('kernel.dns.resolver-dns') }}
-      <Input v-model="fields['resolver-dns']" editable />
-    </div>
-    <div class="form-item">
-      {{ t('kernel.dns.remote-resolver-dns') }}
-      <Input v-model="fields['remote-resolver-dns']" editable />
-    </div>
-    <div class="form-item">
-      {{ t('kernel.dns.final-dns') }}
-      <Select v-model="fields['final-dns']" :options="FinalDnsOptions" />
-    </div>
-    <div class="form-item">
-      {{ t('kernel.dns.local-dns-detour') }}
-      <Select v-model="fields['local-dns-detour']" :options="proxyOptions" />
-    </div>
-    <div class="form-item">
-      {{ t('kernel.dns.remote-dns-detour') }}
-      <Select v-model="fields['remote-dns-detour']" :options="proxyOptions" />
-    </div>
-    <div class="form-item">
-      {{ t('kernel.dns.strategy.name') }}
-      <Select v-model="fields['strategy']" :options="DomainStrategyOptions" />
-    </div>
-
-    <div class="form-item">
-      {{ t('kernel.dns.disable-cache') }}
-      <Switch v-model="fields['disable-cache']" />
-    </div>
-    <div class="form-item">
-      {{ t('kernel.dns.disable-expire') }}
-      <Switch v-model="fields['disable-expire']" />
-    </div>
-    <div class="form-item">
-      {{ t('kernel.dns.independent-cache') }}
-      <Switch v-model="fields['independent-cache']" />
-    </div>
-    <div class="form-item">
-      {{ t('kernel.dns.client-subnet') }}
-      <Input v-model="fields['client-subnet']" editable />
-    </div>
-
-    <div class="form-item">
-      Fake-IP
-      <Switch v-model="fields['fakeip']" />
-    </div>
-    <div v-if="fields['fakeip']">
+  <Tabs v-model:active-key="activeKey" :items="tabs" tab-position="top">
+    <template #common>
       <div class="form-item">
-        {{ t('kernel.dns.fake-ip-range-v4') }}
-        <Input v-model="fields['fake-ip-range-v4']" editable />
+        {{ t('kernel.dns.disable_cache') }}
+        <Switch v-model="model.disable_cache" />
       </div>
       <div class="form-item">
-        {{ t('kernel.dns.fake-ip-range-v6') }}
-        <Input v-model="fields['fake-ip-range-v6']" editable />
+        {{ t('kernel.dns.disable_expire') }}
+        <Switch v-model="model.disable_expire" />
       </div>
-      <div class="form-item" :class="{ 'flex-start': fields['fake-ip-filter'].length !== 0 }">
-        {{ t('kernel.dns.fake-ip-filter') }}
-        <InputList v-model="fields['fake-ip-filter']" />
+      <div class="form-item">
+        {{ t('kernel.dns.independent_cache') }}
+        <Switch v-model="model.independent_cache" />
       </div>
-    </div>
-  </template>
+      <div class="form-item">
+        {{ t('kernel.dns.final') }}
+        <Select v-model="model.final" :options="serversOptions" />
+      </div>
+      <div class="form-item">
+        {{ t('kernel.dns.strategy') }}
+        <Select v-model="model.strategy" :options="DomainStrategyOptions" />
+      </div>
+      <div class="form-item">
+        {{ t('kernel.dns.client_subnet') }}
+        <Input v-model="model.client_subnet" editable />
+      </div>
+      <div class="form-item">
+        {{ t('kernel.dns.fakeip.name') }}
+        <Switch v-model="model.fakeip.enabled" @change="onFakeIPChange" />
+      </div>
+      <template v-if="model.fakeip.enabled">
+        <div class="form-item">
+          {{ t('kernel.dns.fakeip.inet4_range') }}
+          <Input v-model="model.fakeip.inet4_range" editable />
+        </div>
+        <div class="form-item">
+          {{ t('kernel.dns.fakeip.inet6_range') }}
+          <Input v-model="model.fakeip.inet6_range" editable />
+        </div>
+      </template>
+    </template>
+    <template #servers>
+      <DnsServersConfig
+        v-model="model.servers"
+        :outbound-options="outboundOptions"
+        :servers-options="serversOptions"
+        ref="serversConfigRef"
+      />
+    </template>
+    <template #rules>
+      <DnsRulesConfig
+        v-model="model.rules"
+        :inbound-options="inboundOptions"
+        :outbound-options="outboundOptions"
+        :servers-options="serversOptions"
+        :rule-set="ruleSet"
+        ref="rulesConfigRef"
+      />
+    </template>
+  </Tabs>
 </template>
-
-<style lang="less" scoped>
-.flex-start {
-  align-items: flex-start;
-}
-</style>
