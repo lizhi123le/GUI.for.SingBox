@@ -70,6 +70,7 @@ const generateInbounds = (inbounds: IInbound[]) => {
         type: inbound.type,
         tag: inbound.tag,
         ...inbound.tun!,
+        route_address: inbound.tun!.route_address.length ? inbound.tun!.route_address : undefined,
       }
     }
   })
@@ -194,7 +195,7 @@ const generateRoute = (route: IRoute, inbounds: IInbound[], outbounds: IOutbound
         extra.url = ruleset.url
         extra.format = ruleset.format
         extra.download_detour = getOutbound(ruleset.download_detour)
-        if (extra.update_interval) {
+        if (ruleset.update_interval) {
           extra.update_interval = ruleset.update_interval
         }
       }
