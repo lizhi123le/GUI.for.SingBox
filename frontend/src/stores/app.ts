@@ -1,5 +1,5 @@
 import { useI18n } from 'vue-i18n'
-import { computed, ref } from 'vue'
+import { h, computed, ref, type VNode, isVNode, resolveComponent } from 'vue'
 import { defineStore } from 'pinia'
 
 import { useEnvStore } from './env'
@@ -11,6 +11,7 @@ import {
   ignoredError,
   message,
   alert,
+  sampleID,
 } from '@/utils'
 import {
   Download,
@@ -40,6 +41,50 @@ export const useAppStore = defineStore('app', () => {
     x: 0,
     y: 0,
   })
+
+  /* Actions */
+  interface CustomAction {
+    id?: string
+    component: string
+    componentProps?: Recordable
+    componentSlots?: Recordable
+  }
+  interface CustomActionSlotOptions {
+    h: typeof h
+    ref: typeof ref
+  }
+  type CustomActionSlot =
+    | ((options: CustomActionSlotOptions) => VNode | string | number | boolean)
+    | VNode
+    | string
+    | number
+    | boolean
+  const customActions = ref<{ [key: string]: CustomAction[] }>({
+    core_state: [],
+  })
+  const addCustomActions = (target: string, actions: CustomAction | CustomAction[]) => {
+    if (!customActions.value[target]) throw new Error('Target does not exist: ' + target)
+    const _actions = Array.isArray(actions) ? actions : [actions]
+    _actions.forEach((action) => (action.id = sampleID()))
+    customActions.value[target].push(..._actions)
+    const remove = () => {
+      customActions.value[target] = customActions.value[target].filter(
+        (a) => !_actions.some((added) => added.id === a.id),
+      )
+    }
+    return remove
+  }
+  const renderCustomActionSlot = (slot: CustomActionSlot) => {
+    let result: CustomActionSlot = slot
+    if (typeof result === 'function') {
+      const customH = (type: any, ...args: any[]) => h(resolveComponent(type), ...args)
+      result = result({ h: customH, ref })
+    }
+    if (isVNode(result)) {
+      return result
+    }
+    return h('div', result)
+  }
 
   const { t } = useI18n()
   const envStore = useEnvStore()
@@ -146,5 +191,8 @@ export const useAppStore = defineStore('app', () => {
     updatable,
     checkForUpdates,
     downloadApp,
+    customActions,
+    addCustomActions,
+    renderCustomActionSlot,
   }
 })
