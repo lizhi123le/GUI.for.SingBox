@@ -2,9 +2,12 @@
 import { useI18n } from 'vue-i18n'
 import { ref, computed, onUnmounted } from 'vue'
 
+import type { Menu } from '@/types/app'
+
 import { useBool } from '@/hooks'
 import { type PickerItem } from '@/components/Picker/index.vue'
 import { DraggableOptions } from '@/constant/app'
+import { DefaultConnections } from '@/constant/kernel'
 import { useAppSettingsStore } from '@/stores'
 import { getKernelConnectionsWS, deleteConnection } from '@/api/kernel'
 import {
@@ -37,13 +40,6 @@ const columns = computed(() =>
         },
       },
       {
-        title: 'home.connections.process',
-        align: 'center',
-        key: 'metadata.process',
-        hidden: !appSettingsStore.app.connections.visibility['metadata.process'],
-        sort: (a, b) => b.metadata.process.localeCompare(a.metadata.process),
-      },
-      {
         title: 'home.connections.processPath',
         key: 'metadata.processPath',
         hidden: !appSettingsStore.app.connections.visibility['metadata.processPath'],
@@ -55,15 +51,8 @@ const columns = computed(() =>
         hidden: !appSettingsStore.app.connections.visibility['metadata.host'],
         sort: (a, b) => b.metadata.host.localeCompare(a.metadata.host),
         customRender: ({ value, record }) => {
-          return (value || record.metadata.destinationIP) + ':' + record.metadata.destinationPort
+          return value || record.metadata.destinationIP
         },
-      },
-      {
-        title: 'home.connections.sniffHost',
-        align: 'center',
-        key: 'metadata.sniffHost',
-        hidden: !appSettingsStore.app.connections.visibility['metadata.sniffHost'],
-        sort: (a, b) => b.metadata.sniffHost.localeCompare(a.metadata.sniffHost),
       },
       {
         title: 'home.connections.sourceIP',
@@ -76,11 +65,11 @@ const columns = computed(() =>
         },
       },
       {
-        title: 'home.connections.remoteDestination',
+        title: 'home.connections.destinationIP',
         align: 'center',
-        key: 'metadata.remoteDestination',
-        hidden: !appSettingsStore.app.connections.visibility['metadata.remoteDestination'],
-        sort: (a, b) => b.metadata.remoteDestination.localeCompare(a.metadata.remoteDestination),
+        key: 'metadata.destinationIP',
+        hidden: !appSettingsStore.app.connections.visibility['metadata.destinationIP'],
+        sort: (a, b) => b.metadata.destinationIP.localeCompare(a.metadata.destinationIP),
         customRender: ({ value, record }) => {
           return value + ':' + record.metadata.destinationPort
         },
@@ -195,6 +184,14 @@ const menu: Menu[] = [
             value: { domain: record.metadata.host } as any,
             description: record.metadata.host,
           })
+          const domain_suffix = '.' + record.metadata.host.split('.').slice(1).join('.')
+          options.push({
+            label: t('kernel.rules.type.domain_suffix'),
+            value: {
+              domain_suffix: domain_suffix,
+            } as any,
+            description: domain_suffix,
+          })
         }
         if (record.metadata.destinationIP) {
           options.push({
@@ -287,6 +284,11 @@ const handleClearClosedConns = () => {
   disconnectedData.value.splice(0)
 }
 
+const handleResetConnections = () => {
+  appSettingsStore.app.connections = DefaultConnections()
+  message.success('common.success')
+}
+
 const { connect, disconnect } = getKernelConnectionsWS(onConnections)
 const timer = setIntervalImmediately(connect, 1000)
 
@@ -363,13 +365,13 @@ onUnmounted(() => {
 
   <Modal
     v-model:open="showSettings"
-    :submit="false"
+    :footer="false"
     mask-closable
     max-height="80"
     cancel-text="common.close"
     title="home.connections.sort"
   >
-    <div v-draggable="[appSettingsStore.app.connections.order, DraggableOptions]">
+    <div class="sort-view" v-draggable="[appSettingsStore.app.connections.order, DraggableOptions]">
       <Card
         v-for="column in appSettingsStore.app.connections.order"
         :key="column"
@@ -378,6 +380,12 @@ onUnmounted(() => {
         <span class="font-bold">{{ t(columnTitleMap[column] || column) }}</span>
         <Switch v-model="appSettingsStore.app.connections.visibility[column]" class="ml-auto" />
       </Card>
+    </div>
+    <div class="form-action">
+      <Button @click="handleResetConnections" type="text" class="mr-auto">
+        {{ t('common.reset') }}
+      </Button>
+      <Button @click="showSettings = false" type="text">{{ t('common.close') }}</Button>
     </div>
   </Modal>
 </template>
@@ -398,5 +406,11 @@ onUnmounted(() => {
   align-items: center;
   padding: 0 8px;
   margin-bottom: 2px;
+}
+
+.sort-view {
+  padding: 0 8px;
+  overflow-y: auto;
+  max-height: 60vh;
 }
 </style>
