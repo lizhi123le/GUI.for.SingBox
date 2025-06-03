@@ -1,12 +1,18 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
-import { getProxies, getProviders, getConfigs, setConfigs } from '@/api/kernel'
+import { getProxies, getConfigs, setConfigs, Api } from '@/api/kernel'
 import { ProcessInfo, KillProcess, ExecBackground, Readfile } from '@/bridge'
 import { CoreConfigFilePath, CoreStopOutputKeyword, CoreWorkingDirectory } from '@/constant/kernel'
 import { DefaultInboundMixed } from '@/constant/profile'
 import { Inbound, TunStack } from '@/enums/kernel'
-import { useAppSettingsStore, useProfilesStore, useLogsStore, useEnvStore } from '@/stores'
+import {
+  useAppSettingsStore,
+  useProfilesStore,
+  useLogsStore,
+  useEnvStore,
+  usePluginsStore,
+} from '@/stores'
 import {
   generateConfigFile,
   ignoredError,
@@ -14,18 +20,31 @@ import {
   getKernelFileName,
   restoreProfile,
   deepClone,
+  WebSockets,
+  setIntervalImmediately,
+  debounce,
 } from '@/utils'
+
+import type {
+  CoreApiConfig,
+  CoreApiProxy,
+  CoreApiLogsData,
+  CoreApiMemoryData,
+  CoreApiTrafficData,
+  CoreApiConnectionsData,
+} from '@/types/kernel'
 
 export type ProxyType = 'mixed' | 'http' | 'socks'
 
 export const useKernelApiStore = defineStore('kernelApi', () => {
   const envStore = useEnvStore()
   const logsStore = useLogsStore()
+  const pluginsStore = usePluginsStore()
   const profilesStore = useProfilesStore()
   const appSettingsStore = useAppSettingsStore()
 
   /** RESTful API */
-  const config = ref<IKernelApiConfig>({
+  const config = ref<CoreApiConfig>({
     port: 0,
     'mixed-port': 0,
     'socks-port': 0,
@@ -41,13 +60,7 @@ export const useKernelApiStore = defineStore('kernelApi', () => {
 
   let runtimeProfile: IProfile | undefined
 
-  const proxies = ref<Record<string, IKernelProxy>>({})
-  const providers = ref<{
-    [key: string]: {
-      name: string
-      proxies: IKernelProxy[]
-    }
-  }>({})
+  const proxies = ref<Record<string, CoreApiProxy>>({})
 
   const refreshConfig = async () => {
     const _config = await getConfigs()
@@ -174,14 +187,136 @@ export const useKernelApiStore = defineStore('kernelApi', () => {
   }
 
   const refreshProviderProxies = async () => {
-    const [{ providers: a }, { proxies: b }] = await Promise.all([getProviders(), getProxies()])
-    providers.value = a
+    const { proxies: b } = await getProxies()
     proxies.value = b
+  }
+
+  /* WebSocket */
+  let websocketInstance: WebSockets | null
+  const longLivedWS = {
+    setup: undefined as (() => void) | undefined,
+    cleanup: undefined as (() => void) | undefined,
+    timer: -1,
+  }
+  const shortLivedWS = {
+    setup: undefined as (() => void) | undefined,
+    cleanup: undefined as (() => void) | undefined,
+    timer: -1,
+  }
+  const onLogsEvents = {
+    onFirst: undefined as (() => void) | undefined,
+    onEmpty: undefined as (() => void) | undefined,
+  }
+
+  const websocketHandlers = {
+    logs: [] as ((data: CoreApiLogsData) => void)[],
+    memory: [] as ((data: CoreApiMemoryData) => void)[],
+    traffic: [] as ((data: CoreApiTrafficData) => void)[],
+    connections: [] as ((data: CoreApiConnectionsData) => void)[],
+  } as const
+
+  const createCoreWSHandlerRegister = <S extends C[], C>(
+    source: S,
+    events: { onFirst?: () => void; onEmpty?: () => void } = {},
+  ) => {
+    const register = (cb: S[number]) => {
+      source.push(cb)
+      source.length === 1 && events.onFirst?.()
+      const unregister = () => {
+        const idx = source.indexOf(cb)
+        idx !== -1 && source.splice(idx, 1)
+        source.length === 0 && events.onEmpty?.()
+      }
+      return unregister
+    }
+    return register
+  }
+
+  const createCoreWSDispatcher = <T>(source: ((data: T) => void)[]) => {
+    return (data: T) => {
+      source.forEach((cb) => cb(data))
+    }
+  }
+
+  const initCoreWebsockets = () => {
+    websocketInstance = new WebSockets({
+      beforeConnect() {
+        let base = 'ws://127.0.0.1:20123'
+        let bearer = ''
+        const profile = profilesStore.getProfileById(appSettingsStore.app.kernel.profile)
+        if (profile) {
+          const controller = profile.experimental.clash_api.external_controller || '127.0.0.1:20123'
+          const [, port = 20123] = controller.split(':')
+          base = `ws://127.0.0.1:${port}`
+          bearer = profile.experimental.clash_api.secret
+        }
+        this.base = base
+        this.bearer = bearer
+      },
+    })
+
+    const { connect: connectLongLived, disconnect: disconnectLongLived } =
+      websocketInstance.createWS([
+        {
+          name: 'Memory',
+          url: Api.Memory,
+          cb: createCoreWSDispatcher(websocketHandlers.memory),
+        },
+        {
+          name: 'Traffic',
+          url: Api.Traffic,
+          cb: createCoreWSDispatcher(websocketHandlers.traffic),
+        },
+        {
+          name: 'Connections',
+          url: Api.Connections,
+          cb: createCoreWSDispatcher(websocketHandlers.connections),
+        },
+      ])
+
+    const { connect: connectShortLived, disconnect: disconnectShortLived } =
+      websocketInstance.createWS([
+        {
+          name: 'Logs',
+          url: Api.Logs,
+          params: { level: 'debug' },
+          cb: createCoreWSDispatcher(websocketHandlers.logs),
+        },
+      ])
+
+    longLivedWS.setup = () => {
+      longLivedWS.timer = setIntervalImmediately(connectLongLived, 3_000)
+    }
+    longLivedWS.cleanup = () => {
+      clearInterval(longLivedWS.timer)
+      disconnectLongLived()
+      longLivedWS.cleanup = undefined
+    }
+
+    shortLivedWS.setup = () => {
+      shortLivedWS.timer = setIntervalImmediately(connectShortLived, 3_000)
+    }
+    shortLivedWS.cleanup = () => {
+      clearInterval(shortLivedWS.timer)
+      disconnectShortLived()
+      shortLivedWS.cleanup = undefined
+    }
+
+    onLogsEvents.onFirst = shortLivedWS.setup
+    onLogsEvents.onEmpty = shortLivedWS.cleanup
+  }
+
+  const destroyCoreWebsockets = () => {
+    longLivedWS.cleanup?.()
+    shortLivedWS.cleanup?.()
+    websocketInstance = null
   }
 
   /* Bridge API */
   const loading = ref(false)
   const statusLoading = ref(true)
+  let doneFirstCoreUpdate: (value: unknown) => void
+  const firstCoreUpdatePromise = new Promise((r) => (doneFirstCoreUpdate = r))
 
   const isKernelRunning = async (pid: number) => {
     return pid && (await ProcessInfo(pid)).startsWith('sing-box')
@@ -206,7 +341,28 @@ export const useKernelApiStore = defineStore('kernelApi', () => {
     } else if (appSettingsStore.app.autoStartKernel) {
       await startKernel()
     }
+
+    doneFirstCoreUpdate(null)
   }
+
+  const onCoreStarted = async (pid: number) => {
+    appSettingsStore.app.kernel.pid = pid
+    appSettingsStore.app.kernel.running = true
+    await Promise.all([refreshConfig(), refreshProviderProxies()])
+    if (appSettingsStore.app.autoSetSystemProxy) {
+      await envStore.setSystemProxy()
+    }
+    pluginsStore.onCoreStartedTrigger()
+  }
+
+  const onCoreStopped = debounce(async () => {
+    appSettingsStore.app.kernel.pid = 0
+    appSettingsStore.app.kernel.running = false
+    if (appSettingsStore.app.autoSetSystemProxy) {
+      await envStore.clearSystemProxy()
+    }
+    pluginsStore.onCoreStoppedTrigger()
+  }, 100)
 
   const startKernel = async (_profile?: IProfile) => {
     const { profile: profileID, branch } = appSettingsStore.app.kernel
@@ -225,40 +381,22 @@ export const useKernelApiStore = defineStore('kernelApi', () => {
 
     loading.value = true
 
-    const onOut = async (out: string, pid: number) => {
-      logsStore.recordKernelLog(out)
-      if (out.toLowerCase().includes(CoreStopOutputKeyword)) {
-        loading.value = false
-        appSettingsStore.app.kernel.pid = pid
-        appSettingsStore.app.kernel.running = true
-
-        await Promise.all([refreshConfig(), refreshProviderProxies()])
-
-        if (appSettingsStore.app.autoSetSystemProxy) {
-          await envStore.setSystemProxy()
-        }
-      }
-    }
-
-    const onEnd = async () => {
-      loading.value = false
-      appSettingsStore.app.kernel.pid = 0
-      appSettingsStore.app.kernel.running = false
-
-      if (appSettingsStore.app.autoSetSystemProxy) {
-        await envStore.clearSystemProxy()
-      }
-    }
-
     try {
       await generateConfigFile(profile)
       const pid = await ExecBackground(
         kernelFilePath,
         ['run', '--disable-color', '-c', kernelWorkDir + '/config.json', '-D', kernelWorkDir],
-        // stdout
-        (out: string) => onOut(out, pid),
-        // end
-        onEnd,
+        (out) => {
+          logsStore.recordKernelLog(out)
+          if (out.toLowerCase().includes(CoreStopOutputKeyword)) {
+            loading.value = false
+            onCoreStarted(pid)
+          }
+        },
+        () => {
+          loading.value = false
+          onCoreStopped()
+        },
         {
           stopOutputKeyword: CoreStopOutputKeyword,
         },
@@ -272,13 +410,9 @@ export const useKernelApiStore = defineStore('kernelApi', () => {
   const stopKernel = async () => {
     const { pid } = appSettingsStore.app.kernel
     const running = await ignoredError(isKernelRunning, pid)
-    running && (await KillProcess(pid))
-
-    appSettingsStore.app.kernel.pid = 0
-    appSettingsStore.app.kernel.running = false
-
-    if (appSettingsStore.app.autoSetSystemProxy) {
-      await envStore.clearSystemProxy()
+    if (running) {
+      await KillProcess(pid)
+      await onCoreStopped()
     }
 
     logsStore.clearKernelLog()
@@ -328,6 +462,19 @@ export const useKernelApiStore = defineStore('kernelApi', () => {
 
   watch([() => config.value.mode, () => config.value.tun.enable, _watchProxies], updateTrayMenus)
 
+  watch(
+    () => appSettingsStore.app.kernel.running,
+    async (v) => {
+      await firstCoreUpdatePromise
+      if (v) {
+        initCoreWebsockets()
+        longLivedWS.setup?.()
+      } else {
+        destroyCoreWebsockets()
+      }
+    },
+  )
+
   return {
     startKernel,
     stopKernel,
@@ -337,10 +484,14 @@ export const useKernelApiStore = defineStore('kernelApi', () => {
     statusLoading,
     config,
     proxies,
-    providers,
     refreshConfig,
     updateConfig,
     refreshProviderProxies,
     getProxyPort,
+
+    onLogs: createCoreWSHandlerRegister(websocketHandlers.logs, onLogsEvents),
+    onMemory: createCoreWSHandlerRegister(websocketHandlers.memory),
+    onTraffic: createCoreWSHandlerRegister(websocketHandlers.traffic),
+    onConnections: createCoreWSHandlerRegister(websocketHandlers.connections),
   }
 })
